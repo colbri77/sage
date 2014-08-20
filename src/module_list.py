@@ -93,6 +93,40 @@ ext_modules = [
 
     ################################
     ##
+    ## sage.borderbasis
+    ##
+    ################################
+
+    Extension('sage.borderbasis.cppWrapper',
+               sources = ['sage/borderbasis/cppWrapper.pyx',
+                          'sage/borderbasis/src/hash/xxhash.c',
+                          'sage/borderbasis/src/borderBasisTools.cpp',
+                          'sage/borderbasis/src/compUniverse.cpp',
+                          'sage/borderbasis/src/degLexMonomial.cpp',
+                          'sage/borderbasis/src/i_monomial.cpp',
+                          'sage/borderbasis/src/i_polynomial.cpp',
+                          'sage/borderbasis/src/matrix.cpp',
+                          'sage/borderbasis/src/matrixFactory_fn.cpp',
+                          'sage/borderbasis/src/monomialFactory.cpp',
+                          'sage/borderbasis/src/polynomial.cpp',
+                          'sage/borderbasis/src/polynomialFactory.cpp',
+                          'sage/borderbasis/src/statistics.cpp',
+                          'sage/borderbasis/src/term.cpp',
+                          'sage/borderbasis/src/monomialIndex.cpp'], 
+               language='c++',
+               libraries = ["ntl","stdc++","gmp","m4ri", "m4rie"],
+               depends = [SAGE_INC + "/m4rie/m4rie.h", SAGE_INC + "/m4ri/m4ri.h"],
+               include_dirs = [SAGE_INC + '/m4rie', SAGE_INC + '/m4ri'],
+               extra_compile_args = ["-std=c99","-fopenmp","-mmmx","-msse","-msse2","-msse3"],
+               extra_link_args = ["-fopenmp"] ),
+
+
+    #Extension('sage.borderbasis.generator',
+    #           sources = ['sage/borderbasis/generator.pyx'],
+    #           language='c++'),
+
+    ################################
+    ##
     ## sage.algebras
     ##
     ################################
