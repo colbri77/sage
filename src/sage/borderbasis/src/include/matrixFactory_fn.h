@@ -11,7 +11,7 @@ class MatrixFactory_Fn : public IMatrixFactory<uint64_t>
         MatrixFactory_Fn(uint64_t minPolynomial);
         virtual ~MatrixFactory_Fn();
 
-        virtual TAKE_OWN IMatrix<uint64_t>* create(uint r,uint c) const;
+        virtual TAKE_OWN IMatrix<uint64_t>* create(uint r,uint c) const OVERRIDE;
 
     protected:
 
