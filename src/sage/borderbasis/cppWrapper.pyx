@@ -194,6 +194,10 @@ cdef class PyBorderBasisTools_uint64:
             for exponents in values:
                 monomial = (<PyMonomialFactory_uint64>(self.monFactory)).thisptr.create(self.indet)
                 coef = values[exponents]
+                try:
+                    coef = (int)(coef.int_repr())
+                except:
+                    pass
                 for expPos in range(0,self.indet):
                     exp = exponents[expPos]
                     monomial.set(expPos,exp)
@@ -227,9 +231,8 @@ cdef class PyBorderBasisTools_uint64:
             polWrapper.thisptr = <IPolynomial[uint64_t]*>(pol)
             sagePol = self._from_native_pol(polWrapper,ring)
             polList.append(sagePol)
+        #TODO: Next command is not working, PolSeq is incompatible to this kind of list
         #result = PolynomialSequence(polList,ring)
-        # There are like 100 different types of polynomials in sage, and all seem to be incompatible to each other -.-
-        # currently I have no idea how to get from this polynomial to one that the PolynomialSequence accepts...
         result = polList
         return result
 
