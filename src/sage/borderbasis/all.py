@@ -1,2 +1,2 @@
-from sage.borderbasis.generator import BBGenerator
+#from sage.borderbasis.generator import BBGenerator
 

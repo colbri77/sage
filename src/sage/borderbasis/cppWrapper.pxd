@@ -25,9 +25,9 @@ cdef class PyBorderBasisTools_uint64:
     cdef PyMonomialFactory_uint64 monFactory,
     cdef indet
     cdef optimizations
-    cpdef getStatistics(self)
-    cpdef calculateBasis(self,generators)
-    cdef PyIOwningList_pol _toNativePolList(self,pythonList)
-    cdef _fromNativePolList(self,PyIOwningList_pol nativeList,ring)
-    cdef _fromNativePol(self,PyIPolynomial_uint64 nativePol,ring)
+    cpdef get_statistics(self)
+    cpdef calculate_basis(self,generators)
+    cdef PyIOwningList_pol _to_native_pol_list(self,pythonList)
+    cdef _from_native_pol_list(self,PyIOwningList_pol nativeList,ring)
+    cdef _from_native_pol(self,PyIPolynomial_uint64 nativePol,ring)
 
