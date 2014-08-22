@@ -28,6 +28,7 @@ cdef class PyBorderBasisTools_uint64:
     cpdef get_statistics(self)
     cpdef calculate_basis(self,generators)
     cdef PyIOwningList_pol _to_native_pol_list(self,pythonList)
-    cdef _from_native_pol_list(self,PyIOwningList_pol nativeList,ring)
-    cdef _from_native_pol(self,PyIPolynomial_uint64 nativePol,ring)
+    cdef _from_native_pol_list(self,PyIOwningList_pol nativeList,ring,variables)
+    cdef _from_native_pol(self,PyIPolynomial_uint64 nativePol,ring,variables)
+    cdef _get_dict(self,polynomial,variables)
 

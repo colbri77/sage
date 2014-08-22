@@ -11,6 +11,7 @@ from c_src cimport *
 from sage.rings.polynomial.multi_polynomial_sequence import PolynomialSequence
 from sage.calculus.var import var
 from sage.symbolic.expression_conversions import polynomial
+from sage.rings.polynomial.pbori import BooleanPolynomial
 
 cdef class PyIOwningList_pol:
     r"""
@@ -164,8 +165,8 @@ cdef class PyBorderBasisTools_uint64:
         nativeOutWrapper.thisptr = nativeOut
         nativeOrderIdealWrapper.thisptr = nativeOrderIdeal
 
-        polynomials = self._from_native_pol_list(nativeOutWrapper,generators.ring())
-        orderIdeal = self._from_native_pol(nativeOrderIdealWrapper,generators.ring())
+        polynomials = self._from_native_pol_list(nativeOutWrapper,generators.ring(),generators.variables())
+        orderIdeal = self._from_native_pol(nativeOrderIdealWrapper,generators.ring(),generators.variables())
 
         del nativeIn
         del nativeOut
@@ -189,7 +190,7 @@ cdef class PyBorderBasisTools_uint64:
         """
         result = <IOwningList[IPolynomial_uint64*]*>(new OwningVector[IPolynomial_uint64*]())
         for generator in pythonList:
-            values = generator.dict()
+            values = self._get_dict(generator,pythonList.variables())
             pol = (<PyPolynomialFactory_uint64>(self.polFactory)).thisptr.create(self.indet)
             for exponents in values:
                 monomial = (<PyMonomialFactory_uint64>(self.monFactory)).thisptr.create(self.indet)
@@ -208,7 +209,7 @@ cdef class PyBorderBasisTools_uint64:
         wrappedResult.thisptr = result
         return wrappedResult
 
-    cdef _from_native_pol_list(self,PyIOwningList_pol nativeList,ring):
+    cdef _from_native_pol_list(self,PyIOwningList_pol nativeList,ring,variables):
         r"""
         Converts a C++ list of C++ polynomials to a python list of sage polynomials
 
@@ -218,6 +219,7 @@ cdef class PyBorderBasisTools_uint64:
 
             - ``nativeList`` -- a PyIOwningList_pol, containing a C++ list of C++ polynomials to parse
             - ``ring`` -- the polynomial ring associated with the polynomials
+            - ``variables`` -- a list of variables to assign use for the conversion (ordered)
 
         OUTPUT::
 
@@ -229,14 +231,14 @@ cdef class PyBorderBasisTools_uint64:
             pol = nativeList.thisptr.at(polPos)
             polWrapper = PyIPolynomial_uint64()
             polWrapper.thisptr = <IPolynomial[uint64_t]*>(pol)
-            sagePol = self._from_native_pol(polWrapper,ring)
+            sagePol = self._from_native_pol(polWrapper,ring,variables)
             polList.append(sagePol)
         #TODO: Next command is not working, PolSeq is incompatible to this kind of list
         #result = PolynomialSequence(polList,ring)
         result = polList
         return result
 
-    cdef _from_native_pol(self,PyIPolynomial_uint64 nativePol,ring):
+    cdef _from_native_pol(self,PyIPolynomial_uint64 nativePol,ring,variables):
         r"""
         Converts a C++ polynomial to a sage polynomial
 
@@ -246,6 +248,7 @@ cdef class PyBorderBasisTools_uint64:
 
             - ``nativePol`` -- a PyIPolynomial_uint64, containing the C++ polynomial to parse
             - ``ring`` -- the polynomial ring associated with the polynomial
+            - ``variables`` -- a list of variable names to assign to the variable positions
 
         OUTPUT::
 
@@ -266,4 +269,36 @@ cdef class PyBorderBasisTools_uint64:
             sagePol = sagePol + coef * sageMon
         sagePol = polynomial(sagePol,ring)
         return sagePol
+
+    cdef _get_dict(self,polynomial,variables):
+        r"""
+        Builds a dictionary from the given polynomial. In the best case, this is just polynomial.dict(),
+        worst case we have to construct it ourselfes.
+
+        INPUT::
+
+            - ``polynomial`` -- a polynomial of undefined class
+            - ``variables`` -- a list of variables used for the conversion
+
+        OUTPUT::
+
+            A dictionary describing the polynomial
+        """
+        if(type(polynomial)==BooleanPolynomial):
+            result = {}
+            mapping = {}
+            curPos = 0
+            for var in variables:
+                mapping[var] = curPos
+                curPos = curPos + 1
+            for term in polynomial.terms():
+                key = [0]*(len(variables))
+                for var in term.variables():
+                    key[mapping[var]] = 1
+                key = tuple(key)
+                result[key] = 1
+            return result
+        else:
+            return polynomial.dict()
+
 

@@ -33,42 +33,42 @@ From mini AES:
     sage: basis,orderIdeal,statistics = gen.calcBasis(F,2)
 
     sage: basis
-    [k003 + 1,
-     k002 + 1,
-     k001,
-     k000 + 1,
+    [k003,
+     k002,
+     k001 + 1,
+     k000,
      s003 + 1,
      s002,
      s001 + 1,
-     s000,
-     w103,
-     w102,
+     s000 + 1,
+     w103 + 1,
+     w102 + 1,
      w101 + 1,
-     w100 + 1,
+     w100,
      x103,
      x102 + 1,
-     x101,
-     x100 + 1,
+     x101 + 1,
+     x100,
      k103 + 1,
-     k102,
-     k101 + 1,
-     k100 + 1,
+     k102 + 1,
+     k101,
+     k100,
      s103,
-     s102,
+     s102 + 1,
      s101 + 1,
-     s100,
-     w203,
-     w202 + 1,
-     w201 + 1,
+     s100 + 1,
+     w203 + 1,
+     w202,
+     w201,
      w200 + 1,
-     x203 + 1,
+     x203,
      x202 + 1,
      x201,
      x200,
-     k203 + 1,
+     k203,
      k202 + 1,
-     k201,
-     k200] 
+     k201 + 1,
+     k200]
 """
 
 #*****************************************************************************
@@ -173,7 +173,6 @@ class BBGenerator(SageObject):
         WARNING::
 
             Currently, it is only possible to calculate border bases of polynomials in the galois field.
-            Also, the polybori-interface is not supported yet (so use polybori=False when generating e.g. mini AES systems)
         """
         matrixFactory = PyMatrixFactory_Fn_uint64(modPolynomial)
         polynomialFactory = PyPolynomialFactory_uint64()
