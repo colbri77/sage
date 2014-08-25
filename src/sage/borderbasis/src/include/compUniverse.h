@@ -22,7 +22,7 @@ public:
     virtual void addBorder() = 0;
 
     virtual bool contains(IPolynomial<T>* pol) const;
-    virtual bool contains(IMonomial<T>* monomial) const;
+    virtual bool contains(IMonomial* monomial) const;
     virtual void add(IOwningList<IPolynomial<T>*>* additions,uint start);
     virtual void add(IOwningList<IPolynomial<T>*>* additions);
 
@@ -42,7 +42,7 @@ public:
     virtual uint getMaxDegree() const OVERRIDE;
     virtual uint64_t getMaxPos() const OVERRIDE;
     virtual bool contains(uint64_t pos) const OVERRIDE;
-    virtual bool contains(IMonomial<T>* monomial) const OVERRIDE;
+    virtual bool contains(IMonomial* monomial) const OVERRIDE;
     virtual void add(uint64_t pos) OVERRIDE;
     virtual void addBorder() OVERRIDE;
     virtual void add(IOwningList<IPolynomial<T>*>* additions,uint start) OVERRIDE;
@@ -71,7 +71,7 @@ private:
     uint8_t* U;
     uint64_t uLen;
     uint uBlocks;
-    OwningVector<IMonomial<T>*>* lastUBorderCandidates;
+    OwningVector<IMonomial*>* lastUBorderCandidates;
 };
 
 template<typename T>

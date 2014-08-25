@@ -9,21 +9,21 @@ template<typename T>
 class Term
 {
 public:
-    Term(T coef, TAKE_OWN IMonomial<T>* monomial);
+    Term(T coef, TAKE_OWN IMonomial* monomial);
     Term();
     ~Term();
 
     T getCoef() const;
     void setCoef(T coef);
 
-    IMonomial<T>* getMonomial();
-    const IMonomial<T>* getMonomial() const;
-    void setMonomial(TAKE_OWN IMonomial<T>* monomial);
+    IMonomial* getMonomial();
+    const IMonomial* getMonomial() const;
+    void setMonomial(TAKE_OWN IMonomial* monomial);
 
     int compare(const Term* other) const;
 
 private:
-    IMonomial<T>* monomial;
+    IMonomial* monomial;
     T coef;
 };
 

@@ -55,7 +55,7 @@ tableColumns(0)
         #pragma omp for schedule(dynamic,bs) nowait
         for(i=0;i<limit;i++) {
             for(uint k=0,ts=generators->at(i)->size();k<ts;k++) {
-                IMonomial<T>* t = generators->at(i)->at(k)->getMonomial();
+                IMonomial* t = generators->at(i)->at(k)->getMonomial();
                 uint64_t iTemp = t->getPos();
                 #pragma omp critical
                 {
@@ -108,7 +108,7 @@ MonomialIndex<T>::~MonomialIndex()
 }
 
 template<typename T>
-uint MonomialIndex<T>::toIndex(const IMonomial<T>* monomial) const
+uint MonomialIndex<T>::toIndex(const IMonomial* monomial) const
 { 
     if(cTableFast!=NULL)
         return cTableFast[monomial->getPos()].integer;
@@ -117,7 +117,7 @@ uint MonomialIndex<T>::toIndex(const IMonomial<T>* monomial) const
 }
 
 template<typename T>
-TAKE_OWN IMonomial<T>* MonomialIndex<T>::toMonomial(uint index) const
+TAKE_OWN IMonomial* MonomialIndex<T>::toMonomial(uint index) const
 {
     return cTableRev[index].monomial->copy();
 }

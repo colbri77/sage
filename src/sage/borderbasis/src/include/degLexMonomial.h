@@ -5,7 +5,7 @@
 
 namespace polynomial {
 
-class DegLexMonomial : public IMonomial<uint64_t>
+class DegLexMonomial : public IMonomial
 {
 public:
     DegLexMonomial(uint64_t pos, uint indet);
@@ -19,10 +19,10 @@ public:
     virtual uint getIndet() const OVERRIDE;
     virtual uint getDegree() const OVERRIDE;
     virtual void extend(uint index, int value) OVERRIDE;
-    virtual TAKE_OWN IMonomial<uint64_t>* copy() const OVERRIDE;
-    virtual TAKE_OWN IMonomial<uint64_t>* next() const OVERRIDE;
-    virtual bool divides(const IMonomial<uint64_t>* numerator) const OVERRIDE;
-    virtual bool isBorderOf(const IMonomial<uint64_t>* monomial) const OVERRIDE;
+    virtual TAKE_OWN IMonomial* copy() const OVERRIDE;
+    virtual TAKE_OWN IMonomial* next() const OVERRIDE;
+    virtual bool divides(const IMonomial* numerator) const OVERRIDE;
+    virtual bool isBorderOf(const IMonomial* monomial) const OVERRIDE;
 
     virtual uint64_t getPos() const OVERRIDE;
 

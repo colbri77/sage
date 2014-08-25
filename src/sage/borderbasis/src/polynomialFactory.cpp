@@ -1,37 +1,30 @@
-#include "include/monomialFactory.h"
+#include "include/polynomialFactory.h"
 
-#include "include/degLexMonomial.h"
+#include "include/polynomial.h"
 
 namespace polynomial {
 
 template<typename T>
-MonomialFactory<T>::MonomialFactory(MonomialType type)
+PolynomialFactory<T>::PolynomialFactory(PolType type)
 : type(type)
 {
 
 }
 
 template<typename T>
-MonomialFactory<T>::~MonomialFactory()
+PolynomialFactory<T>::~PolynomialFactory()
 {
 
 }
 
 template<typename T>
-TAKE_OWN IMonomial<T>* MonomialFactory<T>::create(uint indet) const
+TAKE_OWN IPolynomial<T>* PolynomialFactory<T>::create(uint indet) const
 {
     // at the moment, there is only one type...
-    return (IMonomial<T>*)new DegLexMonomial(indet);
+    return new Polynomial<T>(indet);
 }
 
-template<typename T>
-TAKE_OWN IMonomial<T>* MonomialFactory<T>::create(uint64_t pos, uint indet) const
-{
-    // at the moment, there is only one type...
-    return (IMonomial<T>*)new DegLexMonomial(pos, indet);
-}
-
-template class MonomialFactory<uint64_t>;
-template class MonomialFactory<int64_t>;
+template class PolynomialFactory<uint64_t>;
+template class PolynomialFactory<int64_t>;
 
 } // namespace polynomial

@@ -4,21 +4,18 @@
 
 namespace polynomial {
 
-template<typename T>
-IMonomial<T>::IMonomial(IMonomial::termOrder termOrdering)
+IMonomial::IMonomial(IMonomial::termOrder termOrdering)
 : termOrdering(termOrdering)
 {
 
 }
 
-template<typename T>
-IMonomial<T>::~IMonomial()
+IMonomial::~IMonomial()
 {
 
 }
 
-template<typename T>
-int IMonomial<T>::compare(const IMonomial<T>* other) const
+int IMonomial::compare(const IMonomial* other) const
 {
     ENSURE(termOrdering == other->termOrdering, "IMonomial::compare(other): monomials have different term ordering");
     ENSURE(getIndet() == other->getIndet(), "IMonomial::compare(other): monomials have a different amount of variables");
@@ -26,8 +23,5 @@ int IMonomial<T>::compare(const IMonomial<T>* other) const
     return getPos()>other->getPos() ? 1 :
             (getPos()<other->getPos() ? -1 : 0);
 }
-
-template class IMonomial<uint64_t>;
-template class IMonomial<int64_t>;
 
 } // namespace polynomial

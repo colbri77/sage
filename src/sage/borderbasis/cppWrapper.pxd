@@ -6,8 +6,8 @@ cdef class PyIOwningList_pol:
 cdef class PyIPolynomial_uint64:
     cdef IPolynomial[uint64_t]* thisptr
 
-cdef class PyMonomialFactory_uint64:
-    cdef MonomialFactory[uint64_t]* thisptr
+cdef class PyMonomialFactory:
+    cdef MonomialFactory* thisptr
 
 cdef class PyPolynomialFactory_uint64:
     cdef PolynomialFactory[uint64_t]* thisptr
@@ -22,7 +22,7 @@ cdef class PyBorderBasisTools_uint64:
     cdef BorderBasisTools[uint64_t]* thisptr
     cdef PyMatrixFactory_uint64 matrixFactory,
     cdef PyPolynomialFactory_uint64 polFactory,
-    cdef PyMonomialFactory_uint64 monFactory,
+    cdef PyMonomialFactory monFactory,
     cdef indet
     cdef optimizations
     cpdef get_statistics(self)

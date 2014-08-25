@@ -9,15 +9,14 @@ enum MonomialType {
 	MONOMIALTYPE_DEGLEX
 };
 
-template<typename T>
 class MonomialFactory
 {
 public:
     MonomialFactory(MonomialType type);
     virtual ~MonomialFactory();
 
-    virtual TAKE_OWN IMonomial<T>* create(uint indet) const;
-    virtual TAKE_OWN IMonomial<T>* create(uint64_t pos, uint indet) const;
+    virtual TAKE_OWN IMonomial* create(uint indet) const;
+    virtual TAKE_OWN IMonomial* create(uint64_t pos, uint indet) const;
 
 private:
     MonomialType type;

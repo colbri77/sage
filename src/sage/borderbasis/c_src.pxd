@@ -9,19 +9,19 @@ cdef extern from "src/include/i_owningList.h" namespace "base":
         unsigned int size()
 
 cdef extern from "src/include/i_monomial.h" namespace "polynomial":
-    cdef cppclass IMonomial[T]:
+    cdef cppclass IMonomial:
         void set(unsigned int index, unsigned int value)
         unsigned int& at(unsigned int & index)
         unsigned int getIndet()
 
 cdef extern from "src/include/term.h" namespace "polynomial":
     cdef cppclass Term[T]:
-        Term(T coef, IMonomial[T]* monomial) except +
+        Term(T coef, IMonomial* monomial) except +
         Term() except +
         T getCoef() 
         void setCoef(T coef)
-        IMonomial[T]* getMonomial()
-        void setMonomial(IMonomial[T]* monomial)
+        IMonomial* getMonomial()
+        void setMonomial(IMonomial* monomial)
 
 cdef extern from "src/include/statistics.h" namespace "borderbasis":
     cdef struct MatrixProp:
@@ -34,9 +34,9 @@ cdef extern from "src/include/statistics.h" namespace "borderbasis":
 cdef extern from "src/include/monomialFactory.h" namespace "polynomial":
     cdef enum MonomialType:
         MONOMIALTYPE_DEGLEX
-    cdef cppclass MonomialFactory[T]:
+    cdef cppclass MonomialFactory:
         MonomialFactory(MonomialType t) except + 
-        IMonomial[T]* create(unsigned int indet) 
+        IMonomial* create(unsigned int indet) 
 
 cdef extern from "src/include/i_polynomial.h" namespace "polynomial":
     cdef cppclass IPolynomial_uint64:
@@ -83,7 +83,7 @@ cdef extern from "src/include/borderBasisTools.h" namespace "borderbasis":
     cdef cppclass BorderBasisTools[T]:
         BorderBasisTools(IMatrixFactory[T]* matrixFactory, 
                          PolynomialFactory[T]* polFactory,
-                         MonomialFactory[T]* monFactory,
+                         MonomialFactory* monFactory,
                          unsigned int indeterminates,
                          OptLevel optimizations)
         void calculateBasis(void* i,

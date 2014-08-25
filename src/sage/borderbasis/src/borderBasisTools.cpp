@@ -19,7 +19,7 @@ uint BorderBasisTools<T>::processors = omp_get_num_procs();
 template<typename T>
 BorderBasisTools<T>::BorderBasisTools(IMatrixFactory<T>* matrixFactory,
                      PolynomialFactory<T>* polFactory,
-                     MonomialFactory<T>* monFactory,
+                     MonomialFactory* monFactory,
                      uint indeterminates,
                      OptLevel optimization)
 : matrixFactory(matrixFactory),
@@ -95,7 +95,7 @@ void BorderBasisTools<T>::calculateBasis(const IOwningList<IPolynomial<T>*>* in,
         IPolynomial<T>* p = tmpVec.pop_lift();
         bool isBorderBasis = false;
         for(uint i=0,ts=orderIdeal->size();i<ts;i++) {
-            IMonomial<T>* t = orderIdeal->at(i)->getMonomial();
+            IMonomial* t = orderIdeal->at(i)->getMonomial();
             if(p->at(0)->getMonomial()->isBorderOf(t)) {
                 isBorderBasis = true;
                 break;
@@ -179,7 +179,7 @@ void BorderBasisTools<T>::toSimpleBasis(IOwningList<IPolynomial<T>*>* in,bool fu
             IPolynomial<T>* p = in->at(r);
             uint ts=p->size();
             for(i=0;i<ts;i++) {
-                IMonomial<T>* t = p->at(i)->getMonomial();
+                IMonomial* t = p->at(i)->getMonomial();
                 uint cTmp = index->toIndex(t);
                 uint64_t vTmp = p->at(i)->getCoef();
                 matrix->set(r,cTmp,vTmp);
@@ -205,7 +205,7 @@ void BorderBasisTools<T>::toSimpleBasis(IOwningList<IPolynomial<T>*>* in,bool fu
             IPolynomial<T>* p = polFactory->create(indet);
             for(uint c=r;c<columns;c++) {
                 if(matrix->get(r,c)!=0) {
-                    IMonomial<T>* t = index->toMonomial(c);
+                    IMonomial* t = index->toMonomial(c);
                     p->push_back(new Term<T>(matrix->get(r,c),t));
                 }
             }
@@ -306,13 +306,13 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
 {
     out->clear();
 
-    IMonomial<T>* t = monFactory->create(indet);
-    IMonomial<T>* tTemp = NULL;
+    IMonomial* t = monFactory->create(indet);
+    IMonomial* tTemp = NULL;
 
     uint lastElemPos = universe->getMaxPos();
 
     for(int i=in->size()-1;i>=0;i--) {
-        IMonomial<T>* tLead = in->at(i)->at(0)->getMonomial();
+        IMonomial* tLead = in->at(i)->at(0)->getMonomial();
         while(tLead->compare(t)>0) {
             bool inUniverse = universe->contains(t);
             if(inUniverse)

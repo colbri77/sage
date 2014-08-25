@@ -27,12 +27,12 @@ cdef class PyIPolynomial_uint64:
     def __cinit__(self):
         pass
 
-cdef class PyMonomialFactory_uint64:
+cdef class PyMonomialFactory:
     r"""
     Parameter class, used to send C++ classes to python methods
     """
     def __cinit__(self):
-        self.thisptr = new MonomialFactory[uint64_t](MONOMIALTYPE_DEGLEX)
+        self.thisptr = new MonomialFactory(MONOMIALTYPE_DEGLEX)
     def __dealloc__(self):
         del self.thisptr
 
@@ -82,13 +82,13 @@ cdef class PyBorderBasisTools_uint64:
 
         sage: matrixFactory = PyMatrixFactory_Fn_uint64(2)
         sage: polynomialFactory = PyPolynomialFactory_uint64()
-        sage: monFactory = PyMonomialFactory_uint64()
+        sage: monFactory = PyMonomialFactory()
 
         sage: PyBorderBasisTools_uint64(matrixFactiry,polynomialFactory,monFactory,F.nvariables(),'enhanced')
         <sage.borderbasis.cppWrapper.PyBorderBasisTools_uint64>
 
     """
-    def __cinit__(self,PyMatrixFactory_uint64 matrixFactory,PyPolynomialFactory_uint64 polFactory,PyMonomialFactory_uint64 monFactory,indeterminates,optimizations):
+    def __cinit__(self,PyMatrixFactory_uint64 matrixFactory,PyPolynomialFactory_uint64 polFactory,PyMonomialFactory monFactory,indeterminates,optimizations):
         self.matrixFactory = matrixFactory
         self.polFactory = polFactory
         self.monFactory = monFactory
@@ -126,7 +126,7 @@ cdef class PyBorderBasisTools_uint64:
 
             sage: matrixFactory = PyMatrixFactory_Fn_uint64(2)
             sage: polynomialFactory = PyPolynomialFactory_uint64()
-            sage: monFactory = PyMonomialFactory_uint64()
+            sage: monFactory = PyMonomialFactory()
 
             sage: bbt = PyBorderBasisTools_uint64(matrixFactiry,polynomialFactory,monFactory,F.nvariables(),'enhanced')
             sage: Basis,orderIdeal = bbt.calculate_basis(F)
@@ -193,7 +193,7 @@ cdef class PyBorderBasisTools_uint64:
             values = self._get_dict(generator,pythonList.variables())
             pol = (<PyPolynomialFactory_uint64>(self.polFactory)).thisptr.create(self.indet)
             for exponents in values:
-                monomial = (<PyMonomialFactory_uint64>(self.monFactory)).thisptr.create(self.indet)
+                monomial = (<PyMonomialFactory>(self.monFactory)).thisptr.create(self.indet)
                 coef = values[exponents]
                 try:
                     coef = (int)(coef.int_repr())

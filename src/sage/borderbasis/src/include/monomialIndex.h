@@ -15,12 +15,12 @@ public:
     virtual ~MonomialIndex();
 
     uint getColumns() const;
-    uint toIndex(const IMonomial<T>* monomial) const;
-    TAKE_OWN IMonomial<T>* toMonomial(uint index) const;
+    uint toIndex(const IMonomial* monomial) const;
+    TAKE_OWN IMonomial* toMonomial(uint index) const;
 
 private:
     union cTableData {
-        IMonomial<T>* monomial;
+        IMonomial* monomial;
         uint integer;
     };
 

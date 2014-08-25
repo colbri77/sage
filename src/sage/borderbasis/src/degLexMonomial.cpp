@@ -5,7 +5,7 @@
 namespace polynomial {
 
 DegLexMonomial::DegLexMonomial(uint64_t pos, uint indet)
-: IMonomial<uint64_t>(IMonomial<uint64_t>::DEGLEX),
+: IMonomial(IMonomial::DEGLEX),
 rep(new uint[indet]()),
 indet(indet),
 pos(0),
@@ -15,7 +15,7 @@ degree(0)
 }
 
 DegLexMonomial::DegLexMonomial(uint indet)
-: IMonomial<uint64_t>(IMonomial<uint64_t>::DEGLEX),
+: IMonomial(IMonomial::DEGLEX),
 rep(new uint[indet]()),
 indet(indet),
 pos(0),
@@ -25,7 +25,7 @@ degree(0)
 }
 
 DegLexMonomial::DegLexMonomial(uint values[], uint indet)
-: IMonomial<uint64_t>(IMonomial<uint64_t>::DEGLEX),
+: IMonomial(IMonomial::DEGLEX),
 rep(new uint[indet]),
 indet(indet),
 pos(0),
@@ -74,7 +74,7 @@ void DegLexMonomial::extend(uint index, int value)
     recalcPos();
 }
 
-TAKE_OWN IMonomial<uint64_t>* DegLexMonomial::copy() const
+TAKE_OWN IMonomial* DegLexMonomial::copy() const
 {
     DegLexMonomial* result = new DegLexMonomial(indet);
 
@@ -86,7 +86,7 @@ TAKE_OWN IMonomial<uint64_t>* DegLexMonomial::copy() const
     return result;
 }
 
-TAKE_OWN IMonomial<uint64_t>* DegLexMonomial::next() const
+TAKE_OWN IMonomial* DegLexMonomial::next() const
 {
     DegLexMonomial* result = (DegLexMonomial*)copy();
 
@@ -116,7 +116,7 @@ TAKE_OWN IMonomial<uint64_t>* DegLexMonomial::next() const
     return result;
 }
 
-bool DegLexMonomial::divides(const IMonomial<uint64_t>* numerator) const
+bool DegLexMonomial::divides(const IMonomial* numerator) const
 {
     ENSURE(indet == numerator->getIndet(), "DegLexMonomial::divides(numerator): monomials have different amounts of variables");
     for(uint i=0;i<indet;i++) {
@@ -126,7 +126,7 @@ bool DegLexMonomial::divides(const IMonomial<uint64_t>* numerator) const
     return true;
 }
 
-bool DegLexMonomial::isBorderOf(const IMonomial<uint64_t>* monomial) const
+bool DegLexMonomial::isBorderOf(const IMonomial* monomial) const
 {
     ENSURE(indet == monomial->getIndet(), "DegLexMonomial::isBorderOf(monomial): monomials have different amounts of variables");
     if(degree!=monomial->getDegree()+1)

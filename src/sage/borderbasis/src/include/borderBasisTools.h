@@ -24,7 +24,7 @@ class BorderBasisTools
 public:
     BorderBasisTools(IMatrixFactory<T>* matrixFactory,
                      PolynomialFactory<T>* polFactory,
-                     MonomialFactory<T>* monFactory,
+                     MonomialFactory* monFactory,
                      uint indeterminates,
                      OptLevel optimization);
     virtual ~BorderBasisTools();
@@ -44,7 +44,7 @@ public:
 private:
     IMatrixFactory<T>* matrixFactory;
     PolynomialFactory<T>* polFactory;
-    MonomialFactory<T>* monFactory;
+    MonomialFactory* monFactory;
     uint indet;
     Statistics* statistics;
     OptLevel optimization;

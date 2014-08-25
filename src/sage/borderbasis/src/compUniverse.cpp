@@ -33,7 +33,7 @@ bool ICompUniverse<T>::contains(IPolynomial<T>* pol) const
 }
 
 template<typename T>
-bool ICompUniverse<T>::contains(IMonomial<T>* monomial) const
+bool ICompUniverse<T>::contains(IMonomial* monomial) const
 {
     return contains(monomial->getPos());
 }
@@ -112,7 +112,7 @@ bool LinearCompUniverse<T>::contains(uint64_t pos) const
 }
 
 template<typename T>
-bool LinearCompUniverse<T>::contains(IMonomial<T>* monomial) const
+bool LinearCompUniverse<T>::contains(IMonomial* monomial) const
 {
     return monomial->getDegree()<=limit;
 }
@@ -153,7 +153,7 @@ SpecificCompUniverse<T>::SpecificCompUniverse(uint indet)
 U(new uint8_t[0]),
 uLen(0),
 uBlocks(0),
-lastUBorderCandidates(new OwningVector<IMonomial<T>*>())
+lastUBorderCandidates(new OwningVector<IMonomial*>())
 {
 
 }
@@ -232,14 +232,14 @@ void SpecificCompUniverse<T>::add(uint64_t pos)
 template<typename T>
 void SpecificCompUniverse<T>::addBorder()
 {
-    stack<IMonomial<T>*> _stack = stack<IMonomial<T>*>();
+    stack<IMonomial*> _stack = stack<IMonomial*>();
     uint64_t maxPos = 0;
 
     // fill the stack with border candidates
     while(lastUBorderCandidates->size()>0) {
-        IMonomial<T>* t = lastUBorderCandidates->pop_lift();
+        IMonomial* t = lastUBorderCandidates->pop_lift();
         for(uint i=0;i<ICompUniverse<T>::indet;i++) {
-            IMonomial<T>* tNew = t->copy();
+            IMonomial* tNew = t->copy();
             tNew->extend(i,1);
             if(tNew->getPos()>maxPos)
                 maxPos = tNew->getPos();
@@ -253,7 +253,7 @@ void SpecificCompUniverse<T>::addBorder()
 
     // finally, add the remaining monomials
     while(!_stack.empty()) {
-        IMonomial<T>* t = _stack.top();
+        IMonomial* t = _stack.top();
         uint64_t pos = t->getPos();
         _stack.pop();
         if(!contains(pos)) {
@@ -268,14 +268,14 @@ void SpecificCompUniverse<T>::addBorder()
 template<typename T>
 void SpecificCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint start)
 {
-    stack<IMonomial<T>*> _stack = stack<IMonomial<T>*>();
+    stack<IMonomial*> _stack = stack<IMonomial*>();
 
     // fill stack with extension candidates
     uint64_t maxPos = 0;
     for(uint iPol=start,ts=additions->size();iPol<ts;iPol++) {
         IPolynomial<T>* p = additions->at(iPol);
         for(uint iMonomial=0,ts2=p->size();iMonomial<ts2;iMonomial++) {
-            IMonomial<T>* t = p->at(iMonomial)->getMonomial();
+            IMonomial* t = p->at(iMonomial)->getMonomial();
             uint64_t pos = t->getPos();
             if(pos>maxPos)
                 maxPos = pos;
@@ -288,7 +288,7 @@ void SpecificCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint s
 
     // finally, add the remaining monomials and their divisors
     while(!_stack.empty()) {
-        IMonomial<T>* t = _stack.top();
+        IMonomial* t = _stack.top();
         uint64_t pos = t->getPos();
         _stack.pop();
 
@@ -297,7 +297,7 @@ void SpecificCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint s
             lastUBorderCandidates->push_back(t->copy());
             for(uint i=0;i<ICompUniverse<T>::indet;i++) {
                 if(t->at(i)>0) {
-                    IMonomial<T>* tNew = t->copy();
+                    IMonomial* tNew = t->copy();
                     tNew->extend(i,-1);
                     _stack.push(tNew);
                 }
@@ -338,14 +338,14 @@ void SpecificCompUniverseNoBorderLog<T>::addBorder()
 template<typename T>
 void SpecificCompUniverseNoBorderLog<T>::add(IOwningList<IPolynomial<T>*>* additions,uint start)
 {
-    stack<IMonomial<T>*> _stack = stack<IMonomial<T>*>();
+    stack<IMonomial*> _stack = stack<IMonomial*>();
 
     // fill stack with extension candidates
     uint64_t maxPos = 0;
     for(uint iPol=start,ts=additions->size();iPol<ts;iPol++) {
         IPolynomial<T>* p = additions->at(iPol);
         for(uint iMonomial=0,ts2=p->size();iMonomial<ts2;iMonomial++) {
-            IMonomial<T>* t = p->at(iMonomial)->getMonomial();
+            IMonomial* t = p->at(iMonomial)->getMonomial();
             uint64_t pos = t->getPos();
             if(pos>maxPos)
                 maxPos = pos;
@@ -358,7 +358,7 @@ void SpecificCompUniverseNoBorderLog<T>::add(IOwningList<IPolynomial<T>*>* addit
 
     // finally, add the remaining monomials and their divisors
     while(!_stack.empty()) {
-        IMonomial<T>* t = _stack.top();
+        IMonomial* t = _stack.top();
         uint64_t pos = t->getPos();
         _stack.pop();
 
@@ -366,7 +366,7 @@ void SpecificCompUniverseNoBorderLog<T>::add(IOwningList<IPolynomial<T>*>* addit
             SpecificCompUniverse<T>::add(pos);
             for(uint i=0;i<ICompUniverse<T>::indet;i++) {
                 if(t->at(i)>0) {
-                    IMonomial<T>* tNew = t->copy();
+                    IMonomial* tNew = t->copy();
                     tNew->extend(i,-1);
                     _stack.push(tNew);
                 }

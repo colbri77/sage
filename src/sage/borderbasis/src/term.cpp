@@ -3,7 +3,7 @@
 namespace polynomial {
 
 template<typename T>
-Term<T>::Term(T coef, TAKE_OWN IMonomial<T>* monomial)
+Term<T>::Term(T coef, TAKE_OWN IMonomial* monomial)
 : monomial(monomial),
 coef(coef)
 {
@@ -37,19 +37,19 @@ void Term<T>::setCoef(T coef)
 }
 
 template<typename T>
-IMonomial<T>* Term<T>::getMonomial()
+IMonomial* Term<T>::getMonomial()
 {
     return monomial;
 }
 
 template<typename T>
-const IMonomial<T>* Term<T>::getMonomial() const
+const IMonomial* Term<T>::getMonomial() const
 {
     return monomial;
 }
 
 template<typename T>
-void Term<T>::setMonomial(TAKE_OWN IMonomial<T>* monomial)
+void Term<T>::setMonomial(TAKE_OWN IMonomial* monomial)
 {
     this->monomial = monomial;
 }
