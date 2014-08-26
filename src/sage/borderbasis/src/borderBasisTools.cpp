@@ -419,14 +419,15 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         else toSimpleBasis(in,false);
 
         // 5. remove elements that have a leading term outside the universe
-        for(int i=(int)in->size()-1;i>lastOriginalPolynomial;i--) {
+        int limit = (field ? lastOriginalPolynomial : -1);
+        for(int i=(int)in->size()-1;i>limit;i--) {
             if(!universe->contains(in->at(i)->at(0)->getMonomial()))
                 in->remove(i);
         }
 
         // 6. If the OptLevel is high enough, we have to extend the comp. universe
         if(optimization!=NONE)
-            universe->add(in,lastOriginalPolynomial);
+            universe->add(in,field ? lastOriginalPolynomial : 0);
 
         // 7. If the size didn't change, its still the same basis and we're done.
         if(in->size()==lastOriginalPolynomial+1)
