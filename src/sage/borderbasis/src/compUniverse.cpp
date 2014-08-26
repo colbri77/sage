@@ -256,7 +256,9 @@ void SpecificCompUniverse<T>::addBorder()
         IMonomial* t = _stack.top();
         uint64_t pos = t->getPos();
         _stack.pop();
-        if(!contains(pos)) {
+        if(!contains(pos) || pos==maxPos) {
+            // only allow children of maxPos once
+            if(pos==maxPos) maxPos++;
             add(pos);
             lastUBorderCandidates->push_back(t);
         } else {
@@ -292,7 +294,9 @@ void SpecificCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint s
         uint64_t pos = t->getPos();
         _stack.pop();
 
-        if(!contains(pos)) {
+        if(!contains(pos) || pos==maxPos) {
+            // only allow children of maxPos once
+            if(pos==maxPos) maxPos++;
             add(pos);
             lastUBorderCandidates->push_back(t->copy());
             for(uint i=0;i<ICompUniverse<T>::indet;i++) {
@@ -362,7 +366,9 @@ void SpecificCompUniverseNoBorderLog<T>::add(IOwningList<IPolynomial<T>*>* addit
         uint64_t pos = t->getPos();
         _stack.pop();
 
-        if(!SpecificCompUniverse<T>::contains(pos)) {
+        if(!SpecificCompUniverse<T>::contains(pos) || pos==maxPos) {
+             // only allow children of maxPos once
+            if(pos==maxPos) maxPos++;
             SpecificCompUniverse<T>::add(pos);
             for(uint i=0;i<ICompUniverse<T>::indet;i++) {
                 if(t->at(i)>0) {

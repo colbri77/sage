@@ -132,7 +132,7 @@ cdef class PyBorderBasisTools_uint64:
             sage: Basis,orderIdeal = bbt.calculate_basis(F)
 
             sage: bbt.get_statistics()
-            {'maxMatrix': {'columns': 6576L, 'rows': 21203L}}
+            {'maxMatrix': {'columns': 6576L, 'rows': 17623L}}
         """
         cdef Statistics* stats = new Statistics()
         self.thisptr.getStatistics(stats)
@@ -254,8 +254,8 @@ cdef class PyBorderBasisTools_uint64:
 
             A sage polynomial equivalent to the C++ polynomial
         """
-        sagePol = 0
         variables = ring.variable_names_recursive()
+        sagePol = var(variables[0])-var(variables[0])
         termSize = nativePol.thisptr.size()
         for termPos in range(0,termSize):
             term = nativePol.thisptr.at(termPos)
