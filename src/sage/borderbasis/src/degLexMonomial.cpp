@@ -143,6 +143,11 @@ bool DegLexMonomial::isBorderOf(const IMonomial* monomial) const
     return true;
 }
 
+bool DegLexMonomial::supportsGetPos() const
+{
+    return true;
+}
+
 uint64_t DegLexMonomial::getPos() const
 {
     return pos;

@@ -24,6 +24,7 @@ public:
     virtual bool divides(const IMonomial* numerator) const OVERRIDE;
     virtual bool isBorderOf(const IMonomial* monomial) const OVERRIDE;
 
+    virtual bool supportsGetPos() const OVERRIDE;
     virtual uint64_t getPos() const OVERRIDE;
 
 private:

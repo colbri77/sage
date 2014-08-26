@@ -56,6 +56,15 @@ void Polynomial<T>::push_back(TAKE_OWN Term<T>* term)
 }
 
 template<typename T>
+void Polynomial<T>::remove(uint index)
+{
+    typename vector<Term<T>*>::iterator it=rep->begin();
+    it += index;
+    delete rep->at(index);
+    rep->erase(it);
+}
+
+template<typename T>
 uint Polynomial<T>::getIndet() const
 {
     return indet;
@@ -102,15 +111,6 @@ void Polynomial<T>::incrementAtIndet(uint index)
     for(uint i=0;i<rep->size();i++) {
         rep->at(i)->getMonomial()->extend(index,1);
     }
-}
-
-template<typename T>
-void Polynomial<T>::remove(uint index)
-{
-    typename vector<Term<T>*>::iterator it=rep->begin();
-    it += index;
-    delete rep->at(index);
-    rep->erase(it);
 }
 
 template class Polynomial<uint64_t>;

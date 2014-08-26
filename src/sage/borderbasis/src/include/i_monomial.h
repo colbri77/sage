@@ -28,6 +28,7 @@ public:
     virtual bool divides(const IMonomial* numerator) const = 0;
     virtual bool isBorderOf(const IMonomial* monomial) const = 0;
 
+    virtual bool supportsGetPos() const = 0;
     virtual uint64_t getPos() const = 0;
 
     int compare(const IMonomial* other) const;

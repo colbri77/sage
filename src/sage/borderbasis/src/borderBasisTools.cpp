@@ -28,12 +28,23 @@ monFactory(monFactory),
 indet(indeterminates),
 statistics(new Statistics()),
 optimization(optimization),
-universe(NULL)
+universe(NULL),
+getPosSupport(monFactory->supportsGetPos())
 {
-    if(optimization==NONE)
-        universe = new LinearCompUniverse<T>(indet);
-    else
-        universe = new SpecificCompUniverse<T>(indet);
+    if(getPosSupport) {
+        switch(optimization) {
+        case NONE: universe = new LinearCompUniverse<T>(indet); break;
+        case ENHANCED: universe = new SpecificCompUniverse<T>(indet); break;
+        case OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
+        case EXPERIMENTAL: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
+        default: ASSERT_NOT_REACHED;
+        }
+    } else {
+        if(optimization==NONE)
+            universe = new LinearCompUniverse<T>(indet);
+        else
+            universe = new SpecificCompUniverseNoOrderPos<T>(indet);
+    }
 }
 
 template<typename T>

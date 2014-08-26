@@ -2,6 +2,7 @@
 #define __COMPUNIVERSE_H__
 
 #include "owningVector.h"
+#include "i_polynomial.h"
 #include "polynomial.h"
 
 namespace borderbasis {
@@ -64,6 +65,40 @@ public:
     virtual uint getMaxDegree() const OVERRIDE;
     virtual uint64_t getMaxPos() const OVERRIDE;
     virtual bool contains(uint64_t pos) const OVERRIDE;
+    virtual void add(uint64_t pos) OVERRIDE;
+    virtual void addBorder() OVERRIDE;
+    virtual void add(IOwningList<IPolynomial<T>*>* additions,uint start) OVERRIDE;
+
+private:
+    uint8_t* U;
+    uint64_t uLen;
+    uint uBlocks;
+    OwningVector<IMonomial*>* lastUBorderCandidates;
+};
+
+template<typename T>
+class SpecificCompUniverseNoBorderLog : public SpecificCompUniverse<T>
+{
+public:
+    SpecificCompUniverseNoBorderLog(uint indet);
+    virtual ~SpecificCompUniverseNoBorderLog();
+
+    virtual void addBorder() OVERRIDE DONT_USE;
+    virtual void add(IOwningList<IPolynomial<T>*>* additions,uint start) OVERRIDE;
+};
+
+template<typename T>
+class SpecificCompUniverseNoOrderPos : public ICompUniverse<T>
+{
+public:
+    SpecificCompUniverseNoOrderPos(uint indet);
+    virtual ~SpecificCompUniverseNoOrderPos();
+
+    virtual void clear() OVERRIDE;
+    virtual void extend(uint64_t limitDegree) OVERRIDE;
+    virtual uint getMaxDegree() const OVERRIDE;
+    virtual uint64_t getMaxPos() const OVERRIDE;
+    virtual bool contains(uint64_t pos) const OVERRIDE;
     virtual bool contains(IMonomial* monomial) const OVERRIDE;
     virtual void add(uint64_t pos) OVERRIDE;
     virtual void addBorder() OVERRIDE;
@@ -72,6 +107,7 @@ public:
 private:
     Polynomial<T>* U;
 };
+
 
 } // namespace borderbasis
 

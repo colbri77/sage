@@ -15,6 +15,8 @@ public:
     MonomialFactory(MonomialType type);
     virtual ~MonomialFactory();
 
+    virtual bool supportsGetPos() const;
+
     virtual TAKE_OWN IMonomial* create(uint indet) const;
     virtual TAKE_OWN IMonomial* create(uint64_t pos, uint indet) const;
 

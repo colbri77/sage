@@ -49,6 +49,7 @@ private:
     Statistics* statistics;
     OptLevel optimization;
     ICompUniverse<T>* universe;
+    bool getPosSupport;
 
     static uint processors;
 
