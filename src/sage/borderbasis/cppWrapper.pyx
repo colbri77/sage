@@ -31,8 +31,11 @@ cdef class PyMonomialFactory:
     r"""
     Parameter class, used to send C++ classes to python methods
     """
-    def __cinit__(self):
-        self.thisptr = new MonomialFactory(MONOMIALTYPE_DEGLEX)
+    def __cinit__(self,use_positions):
+        if use_positions:
+            self.thisptr = new MonomialFactory(MONOMIALTYPE_DEGLEX)
+        else:
+            self.thisptr = new MonomialFactory(MONOMIALTYPE_DEGLEX_NO_ORDER_POS)
     def __dealloc__(self):
         del self.thisptr
 
@@ -45,10 +48,26 @@ cdef class PyPolynomialFactory_uint64:
     def __dealloc__(self):
         del self.thisptr
 
-cdef class PyMatrixFactory_uint64:
+cdef class PyField_uint64:
     r"""
     Parameter class, used to send C++ classes to python methods
     """    
+    def __cinit__(self):
+        pass
+
+cdef class PyFieldFn(PyField_uint64):
+    r"""
+    Parameter class, used to send C++ classes to python methods
+    """
+    def __cinit__(self,minPolynomial):
+        self.thisptr = <IField[uint64_t]*>(new FieldFn(minPolynomial))
+    def __dealloc__(self):
+        del self.thisptr
+
+cdef class PyMatrixFactory_uint64:
+    r"""
+    Parameter class, used to send C++ classes to python methods
+    """
     def __cinit__(self):
         pass
 
@@ -67,7 +86,7 @@ cdef class PyBorderBasisTools_uint64:
 
     INPUT::
 
-        - ``matrixFactory`` -- the matrix factory to use during calculation
+        - ``field`` -- the field to use during calculation
         - ``polFactory`` -- the polynomial factory to use for generating polynomials
         - ``monFactory`` -- the monomial factory to use for generating monomials
         - ``optimizations`` -- a string describing which algorithm to use
@@ -80,15 +99,16 @@ cdef class PyBorderBasisTools_uint64:
         sage: R.<x,y> = PolynomialRing(GF(2),2)
         sage: F = PolynomialSequence([x*y,y**2+x],R)
 
-        sage: matrixFactory = PyMatrixFactory_Fn_uint64(2)
+        sage: field = PyFieldFn(2)
         sage: polynomialFactory = PyPolynomialFactory_uint64()
         sage: monFactory = PyMonomialFactory()
 
-        sage: PyBorderBasisTools_uint64(matrixFactiry,polynomialFactory,monFactory,F.nvariables(),'enhanced')
+        sage: PyBorderBasisTools_uint64(field,polynomialFactory,monFactory,F.nvariables(),'enhanced')
         <sage.borderbasis.cppWrapper.PyBorderBasisTools_uint64>
 
     """
-    def __cinit__(self,PyMatrixFactory_uint64 matrixFactory,PyPolynomialFactory_uint64 polFactory,PyMonomialFactory monFactory,indeterminates,optimizations):
+    def __cinit__(self,PyField_uint64 field,PyMatrixFactory_uint64 matrixFactory,PyPolynomialFactory_uint64 polFactory,PyMonomialFactory monFactory,indeterminates,optimizations):
+        self.field = field
         self.matrixFactory = matrixFactory
         self.polFactory = polFactory
         self.monFactory = monFactory
@@ -104,7 +124,10 @@ cdef class PyBorderBasisTools_uint64:
         else:
             raise ValueError("optimization value \""+optimizations+"\" unknown")
 
-        self.thisptr = new BorderBasisTools[uint64_t](matrixFactory.thisptr,polFactory.thisptr,monFactory.thisptr,indeterminates,self.optimizations)
+        if(field is not None):
+            self.thisptr = new BorderBasisTools[uint64_t](field.thisptr,polFactory.thisptr,monFactory.thisptr,indeterminates,self.optimizations)
+        else:
+            self.thisptr = new BorderBasisTools[uint64_t](1,matrixFactory.thisptr,polFactory.thisptr,monFactory.thisptr,indeterminates,self.optimizations)
 
     def __dealloc__(self):
         del self.thisptr
@@ -116,27 +139,27 @@ cdef class PyBorderBasisTools_uint64:
         OUTPUT::
 
             A map with the following structure:
-            {'maxMatrix': {'columns': <int>, 'rows': <int>}}
-            ``maxMatrix`` describes the biggest matrix the algorithm had to handle during calculation
+            {'maxComparisons': <int>}
+            ``maxComparisons`` describes the biggest amount of comparisons between terms the algorithm had to handle during one reduction step
         
         EXAMPLES::
             sage: from sage.borderbasis.cppWrapper import *
             sage: sr = mq.SR(2,1,1,4,gf2=True,polybori=False)
             sage: F,s = sr.polynomial_system()
 
-            sage: matrixFactory = PyMatrixFactory_Fn_uint64(2)
+            sage: field = PyFieldFn(2)
             sage: polynomialFactory = PyPolynomialFactory_uint64()
             sage: monFactory = PyMonomialFactory()
 
-            sage: bbt = PyBorderBasisTools_uint64(matrixFactiry,polynomialFactory,monFactory,F.nvariables(),'enhanced')
+            sage: bbt = PyBorderBasisTools_uint64(field,polynomialFactory,monFactory,F.nvariables(),'enhanced')
             sage: Basis,orderIdeal = bbt.calculate_basis(F)
 
             sage: bbt.get_statistics()
-            {'maxMatrix': {'columns': 6576L, 'rows': 17623L}}
+            {'maxComparisons': 17623L}
         """
         cdef Statistics* stats = new Statistics()
         self.thisptr.getStatistics(stats)
-        return {'maxMatrix': {'rows': stats.maxMatrix.rows, 'columns': stats.maxMatrix.columns}}
+        return {'maxComparisons': stats.max_comparisons_in_reduction,'maxMatrix': {"rows": stats.maxMatrix.rows, "columns": stats.maxMatrix.columns}}
 
     cpdef calculate_basis(self,generators):
         r"""

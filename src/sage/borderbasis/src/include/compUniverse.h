@@ -21,6 +21,7 @@ public:
     virtual bool contains(uint64_t pos) const = 0;
     virtual void add(uint64_t pos) = 0;
     virtual void addBorder() = 0;
+    virtual bool beyondLastElement(IMonomial* monomial) const = 0;
 
     virtual bool contains(IPolynomial<T>* pol) const;
     virtual bool contains(IMonomial* monomial) const;
@@ -48,6 +49,7 @@ public:
     virtual void add(uint64_t pos) OVERRIDE;
     virtual void addBorder() OVERRIDE;
     virtual void add(IOwningList<IPolynomial<T>*>* additions,uint start) OVERRIDE;
+    virtual bool beyondLastElement(IMonomial* monomial) const OVERRIDE;
 
 private:
     uint limit;
@@ -68,6 +70,7 @@ public:
     virtual void add(uint64_t pos) OVERRIDE;
     virtual void addBorder() OVERRIDE;
     virtual void add(IOwningList<IPolynomial<T>*>* additions,uint start) OVERRIDE;
+    virtual bool beyondLastElement(IMonomial* monomial) const OVERRIDE;
 
 private:
     uint8_t* U;
@@ -103,6 +106,7 @@ public:
     virtual void add(uint64_t pos) OVERRIDE;
     virtual void addBorder() OVERRIDE;
     virtual void add(IMonomial* monomial) OVERRIDE;
+    virtual bool beyondLastElement(IMonomial* monomial) const OVERRIDE;
 
 private:
     Polynomial<T>* U;

@@ -1,6 +1,6 @@
 #include "include/matrixFactory_fn.h"
 
-namespace matrix {
+namespace math {
 
 MatrixFactory_Fn::MatrixFactory_Fn(uint64_t minPolynomial)
 : IMatrixFactory<uint64_t>(),
@@ -31,4 +31,4 @@ TAKE_OWN IMatrix<uint64_t>* MatrixFactory_Fn::create(uint r,uint c) const
     return result;
 }
 
-} // namespace matrix
+} // namespace math

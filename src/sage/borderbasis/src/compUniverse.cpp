@@ -44,7 +44,7 @@ void ICompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint start)
     for(uint i=0,end_i=additions->size(); i<end_i; i++) {
         IPolynomial<T>* pol = additions->at(i);
         for(uint k=0,end_k=pol->size(); k<end_k; k++) {
-            add(pol->at(k)->getMonomial()->getPos());
+            add(pol->at(k)->getMonomial());
         }
     }
 }
@@ -147,6 +147,12 @@ void LinearCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint sta
     }
 }
 
+template<typename T>
+bool LinearCompUniverse<T>::beyondLastElement(IMonomial* monomial) const
+{
+    return monomial->getDegree()>limit;
+}
+
 template class LinearCompUniverse<uint64_t>;
 template class LinearCompUniverse<int64_t>;
 
@@ -156,7 +162,7 @@ template class LinearCompUniverse<int64_t>;
 template<typename T>
 SpecificCompUniverse<T>::SpecificCompUniverse(uint indet)
 : ICompUniverse<T>(indet),
-U(new uint8_t[0]),
+U(new uint8_t[1]),
 uLen(0),
 uBlocks(0),
 lastUBorderCandidates(new OwningVector<IMonomial*>())
@@ -175,7 +181,7 @@ template<typename T>
 void SpecificCompUniverse<T>::clear()
 {
     delete U;
-    U = new uint8_t[0];
+    U = new uint8_t[1];
     uLen = 0;
     uBlocks = 0;
     lastUBorderCandidates->clear();
@@ -318,6 +324,12 @@ void SpecificCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint s
     }
 }
 
+template<typename T>
+bool SpecificCompUniverse<T>::beyondLastElement(IMonomial* monomial) const
+{
+    return monomial->getPos()>(uLen-1);
+}
+
 template class SpecificCompUniverse<uint64_t>;
 template class SpecificCompUniverse<int64_t>;
 
@@ -349,13 +361,14 @@ template<typename T>
 void SpecificCompUniverseNoBorderLog<T>::add(IOwningList<IPolynomial<T>*>* additions,uint start)
 {
     stack<IMonomial*> _stack = stack<IMonomial*>();
+    IMonomial* t = NULL;
 
     // fill stack with extension candidates
     uint64_t maxPos = 0;
     for(uint iPol=start,ts=additions->size();iPol<ts;iPol++) {
         IPolynomial<T>* p = additions->at(iPol);
         for(uint iMonomial=0,ts2=p->size();iMonomial<ts2;iMonomial++) {
-            IMonomial* t = p->at(iMonomial)->getMonomial();
+            t = p->at(iMonomial)->getMonomial();
             uint64_t pos = t->getPos();
             if(pos>maxPos)
                 maxPos = pos;
@@ -368,7 +381,7 @@ void SpecificCompUniverseNoBorderLog<T>::add(IOwningList<IPolynomial<T>*>* addit
 
     // finally, add the remaining monomials and their divisors
     while(!_stack.empty()) {
-        IMonomial* t = _stack.top();
+        t = _stack.top();
         uint64_t pos = t->getPos();
         _stack.pop();
 
@@ -432,9 +445,8 @@ uint SpecificCompUniverseNoOrderPos<T>::getMaxDegree() const
 template<typename T>
 uint64_t SpecificCompUniverseNoOrderPos<T>::getMaxPos() const
 {
-    if(U->size()==0)
-        return 0;
-    return U->at(0)->getMonomial()->getPos();
+    NOT_IMPLEMENTED;
+    return NULL;
 }
 
 template<typename T>
@@ -480,7 +492,7 @@ void SpecificCompUniverseNoOrderPos<T>::addBorder()
 template<typename T>
 void SpecificCompUniverseNoOrderPos<T>::add(IMonomial* monomial)
 {
-    for(int i=0;i<U->size();i++) {
+    for(uint i=0;i<U->size();i++) {
         if(monomial->divides(U->at(i)->getMonomial())) {
             return;
         }
@@ -490,6 +502,16 @@ void SpecificCompUniverseNoOrderPos<T>::add(IMonomial* monomial)
         }
     }
     U->push(new Term<T>(1,monomial->copy()));
+}
+
+template<typename T>
+bool SpecificCompUniverseNoOrderPos<T>::beyondLastElement(IMonomial* monomial) const
+{
+    for(uint i=0,end=U->size();i<end;i++) {
+        if(monomial->divides(U->at(i)->getMonomial()))
+            return false;
+    }
+    return true;
 }
 
 template class SpecificCompUniverseNoOrderPos<uint64_t>;

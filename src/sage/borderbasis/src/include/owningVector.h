@@ -57,14 +57,22 @@ class OwningVector : public vector<T>, public IOwningList<T>
             return vector<T>::at(pos);
         }
 
-	virtual T& at(uint pos)
-	{
+        virtual T& at(uint pos)
+        {
             return vector<T>::at(pos);
         }
 
         virtual uint size() const
         {
             return vector<T>::size();
+        }
+
+        virtual void remove(uint pos)
+        {
+            delete vector<T>::at(pos);
+            typename OwningVector<T>::iterator it = vector<T>::begin();
+            it += pos;
+            vector<T>::erase(it);
         }
 };
 

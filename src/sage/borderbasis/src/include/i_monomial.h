@@ -31,7 +31,7 @@ public:
     virtual bool supportsGetPos() const = 0;
     virtual uint64_t getPos() const = 0;
 
-    int compare(const IMonomial* other) const;
+    virtual int compare(const IMonomial* other) const;
 };
 
 } // namespace polynomial

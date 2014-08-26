@@ -4,6 +4,8 @@
 
 namespace polynomial {
 
+//----- DegLexMonomial ------------------------------------
+
 DegLexMonomial::DegLexMonomial(uint64_t pos, uint indet)
 : IMonomial(IMonomial::DEGLEX),
 rep(new uint[indet]()),
@@ -286,6 +288,166 @@ void DegLexMonomial::initFromPos(uint64_t pos)
     }
 
     rep[indet-1] = degree-runningDegreeCount;
+}
+
+//----- DegLexMonomialNoOrderPos ------------------------------------
+
+DegLexMonomialNoOrderPos::DegLexMonomialNoOrderPos(uint indet)
+: IMonomial(IMonomial::DEGLEX),
+rep(new uint[indet]()),
+indet(indet),
+degree(0)
+{
+
+}
+
+DegLexMonomialNoOrderPos::DegLexMonomialNoOrderPos(uint values[], uint indet)
+: IMonomial(IMonomial::DEGLEX),
+rep(new uint[indet]),
+indet(indet),
+degree(0)
+{
+    memcpy(rep,values,sizeof(uint)*indet);
+    recalcDegree();
+}
+
+DegLexMonomialNoOrderPos::~DegLexMonomialNoOrderPos()
+{
+    delete rep;
+}
+
+const uint& DegLexMonomialNoOrderPos::at(uint const& index) const
+{
+    ENSURE(index < indet, "DegLexMonomial::at(index): index is out of bounds");
+    return rep[index];
+}
+
+void DegLexMonomialNoOrderPos::set(uint index, uint value)
+{
+    ENSURE(index < indet, "DegLexMonomial::set(index): index is out of bounds");
+    degree += (value-rep[index]);
+    rep[index] = value;
+}
+
+uint DegLexMonomialNoOrderPos::getIndet() const
+{
+    return indet;
+}
+
+uint DegLexMonomialNoOrderPos::getDegree() const
+{
+    return degree;
+}
+
+void DegLexMonomialNoOrderPos::extend(uint index, int value)
+{
+    ENSURE(index < indet, "DegLexMonomial::extend(index,value): index is out of bounds");
+    ENSURE(value > 0 || rep[index] >= (uint)(-value), "DegLexMonomial::extend(index,value): value would make index negative");
+    rep[index] += value;
+    degree += value;
+}
+
+TAKE_OWN IMonomial* DegLexMonomialNoOrderPos::copy() const
+{
+    DegLexMonomialNoOrderPos* result = new DegLexMonomialNoOrderPos(indet);
+
+    for(uint i=0;i<indet;i++)
+        result->rep[i] = rep[i];
+
+    result->degree = degree;
+    return result;
+}
+
+TAKE_OWN IMonomial* DegLexMonomialNoOrderPos::next() const
+{
+    DegLexMonomialNoOrderPos* result = (DegLexMonomialNoOrderPos*)copy();
+
+    if(degree==0) {
+        result->rep[indet-1] = 1;
+    } else if(indet==1) {
+        result->rep[0]++;
+    } else if(rep[indet-1]>0) {
+        result->rep[indet-1]--;
+        result->rep[indet-2]++;
+    } else {
+        uint nextNonZero = indet-2;
+        for(;rep[nextNonZero]==0;nextNonZero--);
+        if(nextNonZero==0) {
+            result->rep[0] = 0;
+            result->rep[indet-1] = degree+1;
+        } else {
+            result->rep[indet-1] = rep[nextNonZero]-1;
+            result->rep[nextNonZero] = 0;
+            result->rep[nextNonZero-1] = rep[nextNonZero-1]+1;
+        }
+    }
+
+    result->recalcDegree();
+
+    return result;
+}
+
+bool DegLexMonomialNoOrderPos::divides(const IMonomial* numerator) const
+{
+    ENSURE(indet == numerator->getIndet(), "DegLexMonomial::divides(numerator): monomials have different amounts of variables");
+    for(uint i=0;i<indet;i++) {
+        if(rep[i]>numerator->at(i))
+            return false;
+    }
+    return true;
+}
+
+bool DegLexMonomialNoOrderPos::isBorderOf(const IMonomial* monomial) const
+{
+    ENSURE(indet == monomial->getIndet(), "DegLexMonomial::isBorderOf(monomial): monomials have different amounts of variables");
+    if(degree!=monomial->getDegree()+1)
+        return false;
+    bool foundPos = false;
+    for(uint i=0;i<indet;i++) {
+        if(rep[i]!=monomial->at(i)) {
+            if(foundPos)
+                return false;
+            else
+                foundPos = true;
+        }
+    }
+    return true;
+}
+
+bool DegLexMonomialNoOrderPos::supportsGetPos() const
+{
+    return false;
+}
+
+uint64_t DegLexMonomialNoOrderPos::getPos() const
+{
+    NOT_IMPLEMENTED;
+    return 0;
+}
+
+void DegLexMonomialNoOrderPos::recalcDegree()
+{
+    degree = 0;
+    for(uint i=0;i<indet;i++)
+        degree += rep[i];
+}
+
+int DegLexMonomialNoOrderPos::compare(const IMonomial* other) const
+{
+    ENSURE(termOrdering == other->termOrdering, "IMonomial::compare(other): monomials have different term ordering");
+    ENSURE(getIndet() == other->getIndet(), "IMonomial::compare(other): monomials have a different amount of variables");
+
+    if(degree!=other->getDegree())
+        return ((int)degree)-((int)other->getDegree());
+
+    for(uint i=0;i<indet;i++) {
+        int a = (int)rep[i];
+        int b = (int)other->at(i);
+        if(a!=b)
+            return a-b;
+    }
+
+    return 0;
 }
 
 } // namespace polynomial

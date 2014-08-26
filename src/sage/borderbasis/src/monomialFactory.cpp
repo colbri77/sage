@@ -25,14 +25,20 @@ bool MonomialFactory::supportsGetPos() const
 
 TAKE_OWN IMonomial* MonomialFactory::create(uint indet) const
 {
-    // at the moment, there is only one type...
-    return (IMonomial*)new DegLexMonomial(indet);
+    if(type==MONOMIALTYPE_DEGLEX)
+        return (IMonomial*)new DegLexMonomial(indet);
+    else
+        return (IMonomial*)new DegLexMonomialNoOrderPos(indet);
 }
 
 TAKE_OWN IMonomial* MonomialFactory::create(uint64_t pos, uint indet) const
 {
-    // at the moment, there is only one type...
-    return (IMonomial*)new DegLexMonomial(pos, indet);
+    if(type==MONOMIALTYPE_DEGLEX) {
+        return (IMonomial*)new DegLexMonomial(pos, indet);
+    } else {
+        NOT_IMPLEMENTED;    // we can't do this with DEGLEX_NO_ORDER_POS
+        return NULL;
+    }
 }
 
 } // namespace polynomial

@@ -6,8 +6,8 @@
 namespace borderbasis {
 
 struct MatrixProp {
-	uint rows;
-	uint columns;
+    uint rows;
+    uint columns;
 };
 
 class Statistics {
@@ -17,8 +17,9 @@ public:
 
     void start();
     void stop();
-    void logMatrix(uint r,uint c);
+    void logMatrix(uint64_t r,uint64_t c);
 
+    uint64_t max_comparisons_in_reduction;
     MatrixProp maxMatrix;
 };
 

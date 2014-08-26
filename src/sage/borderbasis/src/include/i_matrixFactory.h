@@ -3,7 +3,7 @@
 
 #include "matrix.h"
 
-namespace matrix {
+namespace math {
 
 template<typename T>
 class IMatrixFactory
@@ -15,6 +15,6 @@ class IMatrixFactory
         virtual TAKE_OWN IMatrix<T>* create(uint r,uint c) const = 0;
 };
 
-} // namespace matrix
+} // namespace math
 
 #endif // __I_MATRIXFACTORY_H__

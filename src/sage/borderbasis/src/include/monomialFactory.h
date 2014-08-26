@@ -6,7 +6,8 @@
 namespace polynomial {
 
 enum MonomialType {
-	MONOMIALTYPE_DEGLEX
+	MONOMIALTYPE_DEGLEX,
+	MONOMIALTYPE_DEGLEX_NO_ORDER_POS
 };
 
 class MonomialFactory

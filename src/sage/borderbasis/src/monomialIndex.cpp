@@ -17,7 +17,6 @@ cTableRev(NULL),
 tableColumns(0)
 {
     uint64_t maxPos = 0;
-
     uint i = 0;
     uint limit = generators->size();
     uint bs = max((uint)1,limit/MonomialIndex<T>::processors);
@@ -36,7 +35,7 @@ tableColumns(0)
             }
         }
     }
-
+    
     // 2. Decide if we can create a fast mapping or if that would need to much memory
     bool useMemoryExpensive = (maxPos<(uint64_t)MEMORY_BORDER);
 
@@ -48,7 +47,7 @@ tableColumns(0)
 
     limit = generators->size();
     bs = max((uint)1,limit/MonomialIndex<T>::processors);
-
+    
     // 3. Fill the table - each unique monomial is placed at its exact position
     #pragma omp parallel private(i) shared(limit,bs,generators)
     {
@@ -74,7 +73,7 @@ tableColumns(0)
             }
         }
     }
-
+    
     // 4. Since we've countet the unique monomials, we know how big the reverse table must be
     cTableRev =  new cTableData[tableColumns];
 
@@ -95,8 +94,6 @@ tableColumns(0)
             runner++;
         }
     }
-
-
 }
 
 template<typename T>

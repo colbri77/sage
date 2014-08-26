@@ -12,6 +12,12 @@ cdef class PyMonomialFactory:
 cdef class PyPolynomialFactory_uint64:
     cdef PolynomialFactory[uint64_t]* thisptr
 
+cdef class PyField_uint64:
+    cdef IField[uint64_t]* thisptr
+
+cdef class PyFieldFn(PyField_uint64):
+    pass
+
 cdef class PyMatrixFactory_uint64:
     cdef IMatrixFactory[uint64_t]* thisptr
 
@@ -20,9 +26,10 @@ cdef class PyMatrixFactory_Fn_uint64(PyMatrixFactory_uint64):
 
 cdef class PyBorderBasisTools_uint64:
     cdef BorderBasisTools[uint64_t]* thisptr
-    cdef PyMatrixFactory_uint64 matrixFactory,
-    cdef PyPolynomialFactory_uint64 polFactory,
-    cdef PyMonomialFactory monFactory,
+    cdef PyField_uint64 field
+    cdef PyMatrixFactory_uint64 matrixFactory
+    cdef PyPolynomialFactory_uint64 polFactory
+    cdef PyMonomialFactory monFactory
     cdef indet
     cdef optimizations
     cpdef get_statistics(self)

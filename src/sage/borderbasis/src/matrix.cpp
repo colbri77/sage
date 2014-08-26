@@ -1,6 +1,6 @@
 #include "include/matrix.h"
 
-namespace matrix {
+namespace math {
 
 //########## IMatrix ####################################
 
@@ -101,4 +101,4 @@ void MatrixFn::toRowEchelon(bool full)
 }
 
 
-} // namespace matrix
+} // namespace math

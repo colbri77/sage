@@ -3,7 +3,7 @@
 
 #include "i_matrixFactory.h"
 
-namespace matrix {
+namespace math {
 
 class MatrixFactory_Fn : public IMatrixFactory<uint64_t>
 {
@@ -19,6 +19,6 @@ class MatrixFactory_Fn : public IMatrixFactory<uint64_t>
         uint64_t polynomial;
 };
 
-} // namespace matrix
+} // namespace math
 
 #endif // __MATRIXFACTORY_FN_H__

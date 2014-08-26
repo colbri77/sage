@@ -24,4 +24,5 @@ int IMonomial::compare(const IMonomial* other) const
             (getPos()<other->getPos() ? -1 : 0);
 }
 
+
 } // namespace polynomial

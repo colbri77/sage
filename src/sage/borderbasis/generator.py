@@ -14,7 +14,7 @@ Small scale example:
 
     sage: R.<x,y> = PolynomialRing(GF(2),2)
     sage: F = PolynomialSequence([x*y,y**2+x],R)
-    sage: gen = BBGenerator(optimization='none')
+    sage: gen = BBGenerator(optimization='none',use_positions=True)
     sage: basis,orderIdeal,statistics = gen.calc_basis(generators=F,modPolynomial=2)
 
     sage: basis
@@ -22,7 +22,7 @@ Small scale example:
     sage: orderIdeal
     x + y + 1
     sage: statistics
-    {'maxMatrix': {'columns': 8L, 'rows': 7L}}
+    {'maxComparisons': }
 
 From mini AES:
 
@@ -131,9 +131,9 @@ class BBGenerator(SageObject):
         sage: BBGenerator('none')
         BBGenerator(optimization='none')
         sage: BBGenerator(optimization='enhanced')
-        BBGenerator(optimization='enhanced')
+        BBGenerator(optimization='enhanced',use_positions=False)
         sage: BBGenerator(optimization='optimistic')
-        BBGenerator(optimization='optimistic')
+        BBGenerator(optimization='optimistic',use_positions=True)
         sage: BBGenerator(optimization='experimental')
         BBGenerator(optimization='experimental')
 
@@ -141,14 +141,15 @@ class BBGenerator(SageObject):
 
         The default optimization level is 'enhanced'. For the levels 'optimistic' and 'experimental', termination can no longer be proven.
     """
-    def __init__(self, optimization="enhanced"):
+    def __init__(self, optimization="enhanced", use_positions=True, use_matrix=False):
         r"""
         Generates a ``BBGenerator`` and initializes it with the chosen optimization level
 
         INPUT::
 
             - ``optimization`` -- (default 'enhanced') which algorithm variant should be used
-        
+            - ``use_positions`` -- (default True) whether to use calculated DegLex-Positions in the algorithm        
+
         EXAMPLES::
 
             sage: from sage.borderbasis.generator import BBGenerator
@@ -157,6 +158,11 @@ class BBGenerator(SageObject):
             BBGenerator(optimization='enhanced')
         """
         self.optimization = optimization
+        self.use_positions = use_positions
+        self.use_matrix = use_matrix
+
+        if(use_matrix and not use_positions):
+            raise RuntimeError("use_matrix needs use_positions enabled")
 
     def __cinit__(self):
         pass
@@ -209,13 +215,24 @@ class BBGenerator(SageObject):
 
             Currently, it is only possible to calculate border bases of polynomials in the galois field.
         """
-        matrixFactory = PyMatrixFactory_Fn_uint64(modPolynomial)
+        field = None
+        matrix = None
+        if(not self.use_matrix):
+            field = PyFieldFn(modPolynomial)
+        else:
+            matrix = PyMatrixFactory_Fn_uint64(modPolynomial)
         polynomialFactory = PyPolynomialFactory_uint64()
-        monFactory = PyMonomialFactory()
-        bbt = PyBorderBasisTools_uint64(matrixFactory,polynomialFactory,monFactory,generators.nvariables(),self.optimization)
+        monFactory = PyMonomialFactory(self.use_positions)
+        bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization)
 
         basis,orderIdeal = bbt.calculate_basis(generators)
         statistics = bbt.get_statistics()
+        
+        del field
+        del polynomialFactory
+        del monFactory
+        del bbt
+
         return (basis,orderIdeal,statistics)
 
     def _latex_(self):

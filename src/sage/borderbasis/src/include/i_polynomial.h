@@ -2,6 +2,7 @@
 #define __I_POLYNOMIAL_H__
 
 #include "term.h"
+#include "field.h"
 
 namespace polynomial {
 
@@ -31,6 +32,7 @@ class IPolynomial
         virtual int compare(const IPolynomial* other) const;
 
         virtual uint64_t hash() const;
+        virtual void subtract(IPolynomial<T>* other,IField<T>* f);
 };
 
 typedef IPolynomial<uint64_t> IPolynomial_uint64;

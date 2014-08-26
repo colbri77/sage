@@ -7,22 +7,59 @@
 #include <stdlib.h>
 #include <map>
 #include <omp.h>
+#include <cstring>
 #include "include/owningVector.h"
-#include "include/monomialIndex.h"
 #include "include/degLexMonomial.h"
+#include "include/field.h"
+#include "include/monomialIndex.h"
 
 namespace borderbasis {
+
 
 template<typename T>
 uint BorderBasisTools<T>::processors = omp_get_num_procs();
 
 template<typename T>
-BorderBasisTools<T>::BorderBasisTools(IMatrixFactory<T>* matrixFactory,
+BorderBasisTools<T>::BorderBasisTools(IField<T>* field,
                      PolynomialFactory<T>* polFactory,
                      MonomialFactory* monFactory,
                      uint indeterminates,
                      OptLevel optimization)
-: matrixFactory(matrixFactory),
+: field(field),
+matrixFactory(NULL),
+polFactory(polFactory),
+monFactory(monFactory),
+indet(indeterminates),
+statistics(new Statistics()),
+optimization(optimization),
+universe(NULL),
+getPosSupport(monFactory->supportsGetPos())
+{ 
+    if(getPosSupport) {
+        switch(optimization) {
+        case NONE: universe = new LinearCompUniverse<T>(indet); break;
+        case ENHANCED: universe = new SpecificCompUniverse<T>(indet); break;
+        case OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
+        case EXPERIMENTAL: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
+        default: ASSERT_NOT_REACHED;
+        }
+    } else {
+        if(optimization==NONE)
+            universe = new LinearCompUniverse<T>(indet);
+        else
+            universe = new SpecificCompUniverseNoOrderPos<T>(indet);
+    }
+}
+
+template<typename T>
+BorderBasisTools<T>::BorderBasisTools(int dummyNeccessaryForCython,
+                     IMatrixFactory<T>* matrixFactory,
+                     PolynomialFactory<T>* polFactory,
+                     MonomialFactory* monFactory,
+                     uint indeterminates,
+                     OptLevel optimization)
+: field(NULL),
+matrixFactory(matrixFactory),
 polFactory(polFactory),
 monFactory(monFactory),
 indet(indeterminates),
@@ -47,6 +84,7 @@ getPosSupport(monFactory->supportsGetPos())
     }
 }
 
+
 template<typename T>
 BorderBasisTools<T>::~BorderBasisTools()
 {
@@ -60,8 +98,79 @@ BorderBasisTools<T>::~BorderBasisTools()
 template<typename T>
 void BorderBasisTools<T>::getStatistics(Statistics* out) const
 {
-    out->maxMatrix.columns = statistics->maxMatrix.columns;
+    out->max_comparisons_in_reduction = statistics->max_comparisons_in_reduction;
     out->maxMatrix.rows = statistics->maxMatrix.rows;
+    out->maxMatrix.columns = statistics->maxMatrix.columns;
+}
+
+template<typename T>
+
+void BorderBasisTools<T>::toSimpleBasis(IOwningList<IPolynomial<T>*>* in,bool full)
+
+{
+    MonomialIndex<T>* index = new MonomialIndex<T>(in);
+
+    uint columns = index->getColumns();
+    uint rows = in->size();
+
+    IMatrix<T>* matrix = matrixFactory->create(rows,columns);
+
+    statistics->logMatrix(rows,columns);
+
+    uint i = 0, r = 0;
+    uint bs = max((uint)1,rows/BorderBasisTools<T>::processors);
+
+    // fill the matrix
+    #pragma omp parallel private(i,r) shared(rows,in,matrix,bs)
+    {
+        #pragma omp for schedule(dynamic,bs) nowait
+        for(r=0;r<rows;r++) {
+            IPolynomial<T>* p = in->at(r);
+            uint ts=p->size();
+            for(i=0;i<ts;i++) {
+                IMonomial* t = p->at(i)->getMonomial();
+                uint cTmp = index->toIndex(t);
+                uint64_t vTmp = p->at(i)->getCoef();
+                matrix->set(r,cTmp,vTmp);
+            }
+        }
+    }
+
+    // transformation in row echelon form
+    matrix->toRowEchelon(true);
+
+    // store polynomials in "in" temporarily, the MonomialIndex relies on their existence.
+    OwningVector<IPolynomial<T>*> tmpStorage = OwningVector<IPolynomial<T>*>();
+    for(i=in->size();i>0;i--)
+        tmpStorage.push_back(in->pop_lift());
+
+    // extract the new polynomials from the matrix
+    bs = max((uint)1,rows/BorderBasisTools<T>::processors);
+    #pragma omp parallel private(r) shared(rows,columns,bs,matrix,in)
+    {
+        #pragma omp for ordered schedule(dynamic,bs) nowait
+        for(r=0;r<rows;r++) {
+            uint curPos = 0;
+            IPolynomial<T>* p = polFactory->create(indet);
+            for(uint c=r;c<columns;c++) {
+                if(matrix->get(r,c)!=0) {
+                    IMonomial* t = index->toMonomial(c);
+                    p->push_back(new Term<T>(matrix->get(r,c),t));
+                }
+            }
+            if(!p->isZero()) {
+                #pragma omp ordered
+                {
+                    in->push_back(p);
+                }
+            }
+            else
+                delete p;
+        }
+    }
+
+    delete matrix;
+    delete index;
 }
 
 template<typename T>
@@ -164,80 +273,94 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal)
     return result;
 }
 
+
 template<typename T>
-void BorderBasisTools<T>::toSimpleBasis(IOwningList<IPolynomial<T>*>* in,bool full)
+void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,uint pos)
 {
-    MonomialIndex<T>* index = new MonomialIndex<T>(in);
+    uint64_t cmpCounter = 0;
 
-    uint columns = index->getColumns();
-    uint rows = in->size();
+    uint8_t* checkList = new uint8_t[in->size()/8+1]();
 
-    IMatrix<T>* matrix = matrixFactory->create(rows,columns);
+    for(;pos<in->size();pos++) {
+        IPolynomial<T>* p = in->at(pos);
+        uint64_t coef = p->at(0)->getCoef();
 
-    statistics->logMatrix(rows,columns);
+        // reduce the polynomials leading terms coefficient to zero
+        if(coef!=1) {
+            for(uint i=0;i<p->size();i++) {
+                Term<T>* term = p->at(i);
+                uint64_t newCoef = field->divide(term->getCoef(),coef);
+                if(newCoef==0) {
+                    p->remove(i);
+                    i--;
+                } else {
+                    term->setCoef(newCoef);
+                }
+            }
+        }
 
-    uint i = 0, r = 0;
-    uint bs = max((uint)1,rows/BorderBasisTools<T>::processors);
+        memset(checkList,0,in->size()/8+1);
+        IMonomial* leading = p->at(0)->getMonomial();
 
-    // fill the matrix
-    #pragma omp parallel private(i,r) shared(rows,in,matrix,bs)
-    {
-        #pragma omp for schedule(dynamic,bs) nowait
-        for(r=0;r<rows;r++) {
-            IPolynomial<T>* p = in->at(r);
-            uint ts=p->size();
-            for(i=0;i<ts;i++) {
-                IMonomial* t = p->at(i)->getMonomial();
-                uint cTmp = index->toIndex(t);
-                uint64_t vTmp = p->at(i)->getCoef();
-                matrix->set(r,cTmp,vTmp);
+        // we prevent running through aleady checked bigger polynomials by only remembering the lower ones.
+        for(int checkPos=0;checkPos<pos;checkPos++) {
+            if((checkList[checkPos/8]>>(checkPos%8))&1) // already checked, its too big
+                continue;
+
+            cmpCounter++;
+            int cmp = in->at(checkPos)->at(0)->getMonomial()->compare(leading);
+            if(cmp>0) {
+                // not a hit and too big for future monomials => ignore in the future
+                checkList[checkPos/8] |= (1>>(checkPos%8));
+            }
+            else if(cmp==0) {
+                // a hit! Reduce the current polynomial and start from the beginning.
+                checkList[checkPos/8] |= (1>>(checkPos%8));
+
+                p->subtract(in->at(checkPos),field);
+                if(p->isZero())
+                    break;
+                leading = p->at(0)->getMonomial();
+                checkPos = -1;
+            }
+        }
+
+        // check if the polynomial had been reduced to 0
+        if(p->isZero()) {
+            in->remove(pos);
+            pos--;
+            continue;
+        }
+
+        // if the polynomial is not zero, we reduce all the other polynomials to make future calls faster
+        leading = p->at(0)->getMonomial();
+        for(uint checkPos=0;checkPos<pos;checkPos++) {
+            IPolynomial<T>* curPol = in->at(checkPos);
+            int cmp = 1;
+            for(uint i=0,end_i=curPol->size();cmp>0 && i<end_i;i++) {
+                cmpCounter++;
+                cmp = curPol->at(i)->getMonomial()->compare(leading);
+            }
+            if(cmp==0) {
+                curPol->subtract(p,field);
             }
         }
     }
 
-    // transformation in row echelon form
-    matrix->toRowEchelon(true);
+    delete checkList;
 
-    // store polynomials in "in" temporarily, the MonomialIndex relies on their existence.
-    OwningVector<IPolynomial<T>*> tmpStorage = OwningVector<IPolynomial<T>*>();
-    for(i=in->size();i>0;i--)
-        tmpStorage.push_back(in->pop_lift());
-
-    // extract the new polynomials from the matrix
-    bs = max((uint)1,rows/BorderBasisTools<T>::processors);
-    #pragma omp parallel private(r) shared(rows,columns,bs,matrix,in)
-    {
-        #pragma omp for ordered schedule(dynamic,bs) nowait
-        for(r=0;r<rows;r++) {
-            uint curPos = 0;
-            IPolynomial<T>* p = polFactory->create(indet);
-            for(uint c=r;c<columns;c++) {
-                if(matrix->get(r,c)!=0) {
-                    IMonomial* t = index->toMonomial(c);
-                    p->push_back(new Term<T>(matrix->get(r,c),t));
-                }
-            }
-            if(!p->isZero()) {
-                #pragma omp ordered
-                {
-                    in->push_back(p);
-                }
-            }
-            else
-                delete p;
-        }
-    }
-
-    delete matrix;
-    delete index;
+    if(cmpCounter>statistics->max_comparisons_in_reduction)
+        statistics->max_comparisons_in_reduction = cmpCounter;
 }
 
 template<typename T>
 void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
 {
     // 1. If the list does not already describe a basis, convert it to one
-    if(!isBasis)
-        toSimpleBasis(in,true);
+    if(!isBasis) {
+        if(field) addAndReduce(in,0);
+        else toSimpleBasis(in,true);
+    }
 
     // 2. We create a map to store hashes of all processed polynomials so that we can ignore
     //    them when they come back up later. If the value in the list is false, then they are
@@ -255,11 +378,10 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         for(uint i=0;i<end;i++) {
             IPolynomial<T>* currentPol = in->at(i);
 
-            // 3.1 We check if the "offspring" would still be in the computational universe
-            // ---this is a shortcut for the NONE-Optimization
-            if(optimization==NONE) {
-                if(currentPol->at(0)->getMonomial()->getDegree()>=universe->getMaxDegree())
-                    continue;   // 3.1.1 If not, continue with the next polynomial
+            // 3.1 on "experimental", we have to make sure this one is still in the computational universe
+            if(optimization==EXPERIMENTAL) {
+                if(!universe->contains(currentPol->at(0)->getMonomial()))
+                    continue;
             }
 
             // 3.2 Check if this polynomial has already been handled completely
@@ -275,17 +397,12 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
             for(uint k=0;k<indet;k++) {
                 IPolynomial<T>* p = currentPol->copy();
                 p->incrementAtIndet(k);
-                // 3.4 Check if the leading term is in the universe. On OptLevel NONE this is already sure.
-                if(optimization==NONE || universe->contains(p->at(0)->getMonomial())) {
-                    hash = p->hash();
-                    it = polMap.find(hash);
-                    // 3.5 If offspring has never been seen before, add it to the list
-                    if(it==polMap.end()) {
-                        polMap[hash] = false;
-                        in->push_back(p);
-                    } else {
-                        delete p;
-                    }
+                hash = p->hash();
+                it = polMap.find(hash);
+                // 3.5 If offspring has never been seen before, add it to the list
+                if(it==polMap.end()) {
+                    polMap[hash] = false;
+                    in->push_back(p);
                 } else {
                     delete p;
                 }
@@ -297,13 +414,21 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
             }
         }
 
-        // 4. If the OptLevel is high enough, we have to extend the comp. universe
+        // 4. We now have the extended list, calculate a new basis of it.
+        if(field) addAndReduce(in,lastOriginalPolynomial+1);
+        else toSimpleBasis(in,false);
+
+        // 5. remove elements that have a leading term outside the universe
+        for(int i=(int)in->size()-1;i>lastOriginalPolynomial;i--) {
+            if(!universe->contains(in->at(i)->at(0)->getMonomial()))
+                in->remove(i);
+        }
+
+        // 6. If the OptLevel is high enough, we have to extend the comp. universe
         if(optimization!=NONE)
             universe->add(in,lastOriginalPolynomial);
 
-        // 5. We now have the extended list, calculate a new basis of it.
-        toSimpleBasis(in,true);
-        // 6. If the size didn't change, its still the same basis and we're done.
+        // 7. If the size didn't change, its still the same basis and we're done.
         if(in->size()==lastOriginalPolynomial+1)
             break;
     }
@@ -317,10 +442,14 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
     IMonomial* t = monFactory->create(indet);
     IMonomial* tTemp = NULL;
 
-    uint lastElemPos = universe->getMaxPos();
+    IPolynomial<T>* p = polFactory->create(indet);
+    // collect leading monomials
+    for(uint i=0,end_i=in->size();i<end_i;i++) {
+        p->push(new Term<T>(1,in->at(i)->at(0)->getMonomial()->copy()));
+    }
 
-    for(int i=in->size()-1;i>=0;i--) {
-        IMonomial* tLead = in->at(i)->at(0)->getMonomial();
+    for(int i=p->size()-1;i>=0;i--) {
+        IMonomial* tLead = p->at(i)->getMonomial();
         while(tLead->compare(t)>0) {
             bool inUniverse = universe->contains(t);
             if(inUniverse)
@@ -334,7 +463,7 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
         t = t->next();
         delete tTemp;
     }
-    while(t->getPos()<=lastElemPos) {
+    while(!universe->beyondLastElement(t)) {
         bool inUniverse = universe->contains(t);
         if(inUniverse)
             out->push(new Term<T>(1,t));
@@ -343,6 +472,7 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
         if(!inUniverse)
             delete tTemp;
     }
+    delete p;
     delete t;
 }
 

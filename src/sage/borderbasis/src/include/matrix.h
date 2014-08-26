@@ -5,7 +5,7 @@
 #include "m4rie/m4rie.h"
 #include "definitions.h"
 
-namespace matrix {
+namespace math {
 
 template<typename T>
 class IMatrix
@@ -57,6 +57,6 @@ class MatrixFn : public IMatrix<uint64_t>
         bool inRowEchelonForm;
 };
 
-} // namespace matrix
+} // namespace math
 
 #endif // __MATRIX_H__

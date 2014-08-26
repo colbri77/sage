@@ -24,12 +24,13 @@ typedef unsigned int uint;
 
 // namespace definitions:
 namespace base {using namespace std;}
+namespace math {using namespace std;}
 namespace polynomial {using namespace std;
-                    using namespace base;}
-namespace matrix {using namespace std;}
+                    using namespace base;
+                    using namespace math;}
 namespace borderbasis {using namespace std;
                     using namespace base;
                     using namespace polynomial;
-                    using namespace matrix;}
+                    using namespace math;}
 
 #endif // __DEFINITIONS_H__
