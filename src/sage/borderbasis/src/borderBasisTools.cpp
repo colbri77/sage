@@ -30,13 +30,10 @@ statistics(new Statistics()),
 optimization(optimization),
 universe(NULL)
 {
-    switch(optimization) {
-    case NONE: universe = new LinearCompUniverse<T>(indet); break;
-    case ENHANCED: universe = new SpecificCompUniverse<T>(indet); break;
-    case OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
-    case EXPERIMENTAL: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
-    default: ASSERT_NOT_REACHED;
-    }
+    if(optimization==NONE)
+        universe = new LinearCompUniverse<T>(indet);
+    else
+        universe = new SpecificCompUniverse<T>(indet);
 }
 
 template<typename T>

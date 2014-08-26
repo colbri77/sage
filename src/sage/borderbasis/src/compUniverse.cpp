@@ -4,6 +4,7 @@
 #include <cstring>
 #include "include/owningVector.h"
 #include "include/degLexMonomial.h"
+#include "include/term.h"
 
 namespace borderbasis {
 
@@ -39,22 +40,27 @@ bool ICompUniverse<T>::contains(IMonomial* monomial) const
 }
 
 template<typename T>
-void ICompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint start)
-{
-    for(uint i=0,end_i=additions->size(); i<end_i; i++) {
-        IPolynomial<T>* pol = additions->at(i);
-        for(uint k=0,end_k=pol->size(); k<end_k; k++) {
-            add(pol->at(k)->getMonomial()->getPos());
-        }
-    }
-}
-
-template<typename T>
 void ICompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions)
 {
     add(additions,0);
 }
 
+template<typename T>
+void ICompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions, uint start)
+{
+    for(uint i=start,end_i=additions->size();i<end_i;i++) {
+        IPolynomial<T>* p = additions->at(i);
+        for(uint k=0,end_k=p->size();k<end_k;k++) {
+            add(p->at(k)->getMonomial());
+        }
+    }
+}
+
+template<typename T>
+void ICompUniverse<T>::add(IMonomial* monomial)
+{
+    add(monomial->getPos());
+}
 
 //########## LinearCompUniverse ############################################
 
@@ -150,10 +156,7 @@ template class LinearCompUniverse<int64_t>;
 template<typename T>
 SpecificCompUniverse<T>::SpecificCompUniverse(uint indet)
 : ICompUniverse<T>(indet),
-U(new uint8_t[0]),
-uLen(0),
-uBlocks(0),
-lastUBorderCandidates(new OwningVector<IMonomial*>())
+U(new Polynomial<T>(indet))
 {
 
 }
@@ -162,228 +165,92 @@ template<typename T>
 SpecificCompUniverse<T>::~SpecificCompUniverse()
 {
     delete U;
-    delete lastUBorderCandidates;
 }
 
 template<typename T>
 void SpecificCompUniverse<T>::clear()
 {
-    delete U;
-    U = new uint8_t[0];
-    uLen = 0;
-    uBlocks = 0;
-    lastUBorderCandidates->clear();
+    U->clear();
 }
 
 template<typename T>
 void SpecificCompUniverse<T>::extend(uint64_t limitDegree)
 {
-    // construct a monomial at the edge
-    DegLexMonomial* monomial = new DegLexMonomial(ICompUniverse<T>::indet);
-    monomial->set(0,limitDegree);
-    uint64_t pos = monomial->getPos();
-    delete monomial;
-
-    for(; !contains(pos) && pos>0; pos--) {
-        add(pos);
-    }
+    NOT_IMPLEMENTED;
 }
 
 template<typename T>
 uint SpecificCompUniverse<T>::getMaxDegree() const
 {
-    uint64_t pos = uLen;
-    for(; !contains(pos) && pos>0; pos--);
-    DegLexMonomial* monomial = new DegLexMonomial(pos,ICompUniverse<T>::indet);
-    uint result = monomial->getDegree();
-    delete monomial;
-
-    return result;
+    if(U->size()==0)
+        return 0;
+    return U->at(0)->getMonomial()->getDegree();
 }
 
 template<typename T>
 uint64_t SpecificCompUniverse<T>::getMaxPos() const
 {
-    return uLen-1;
+    if(U->size()==0)
+        return 0;
+    return U->at(0)->getMonomial()->getPos();
 }
 
 template<typename T>
 bool SpecificCompUniverse<T>::contains(uint64_t pos) const
 {
-    return (uLen>pos) && ((U[(pos)>>3]&(1<<((pos)&7)))!=0);
+    NOT_IMPLEMENTED;
+    return NULL;
+}
+
+template<typename T>
+bool SpecificCompUniverse<T>::contains(IMonomial* monomial) const
+{
+    for(uint i=0,end=U->size();i<end;i++) {
+        if(U->at(i)->getMonomial()->divides(monomial))
+            return true;
+    }
+    return false;
 }
 
 template<typename T>
 void SpecificCompUniverse<T>::add(uint64_t pos)
 {
-    if(pos>(uLen+1)) {
-        // plus 2 is not specifically calculated - better safe than sorry.
-        uint newUBlocks = (pos+9)/8+2;
-        uint8_t* uNew = new uint8_t[newUBlocks]();
-        memcpy(uNew,U,uBlocks);
-        uBlocks = newUBlocks;
-        uLen = pos+1;
-        delete U;
-        U = uNew;
-    }
-    (U[(pos)>>3]|=(1<<((pos)&7)));
+    NOT_IMPLEMENTED;
 }
 
 template<typename T>
 void SpecificCompUniverse<T>::addBorder()
 {
-    stack<IMonomial*> _stack = stack<IMonomial*>();
-    uint64_t maxPos = 0;
-
-    // fill the stack with border candidates
-    while(lastUBorderCandidates->size()>0) {
-        IMonomial* t = lastUBorderCandidates->pop_lift();
-        for(uint i=0;i<ICompUniverse<T>::indet;i++) {
-            IMonomial* tNew = t->copy();
-            tNew->extend(i,1);
-            if(tNew->getPos()>maxPos)
-                maxPos = tNew->getPos();
-            _stack.push(tNew);
+    OwningVector<IPolynomial<T>*>* newElements = new OwningVector<IPolynomial<T>*>();
+    for(uint i=0,end_i=U->size();i<end_i;i++) {
+        Polynomial<T>* p = new Polynomial<T>(ICompUniverse<T>::indet);
+        for(uint k=0,end_k=U->getIndet();k<end_k;k++) {
+            IMonomial* m = U->at(i)->getMonomial()->copy();
+            m->extend(k,1);
+            p->push(new Term<T>(1,m));
         }
-        delete t;
+        newElements->push_back(p);
     }
-
-    // extend by the maxima first, otherwise we might have inefficient many memory reallocations
-    add(maxPos);
-
-    // finally, add the remaining monomials
-    while(!_stack.empty()) {
-        IMonomial* t = _stack.top();
-        uint64_t pos = t->getPos();
-        _stack.pop();
-        if(!contains(pos) || pos==maxPos) {
-            // only allow children of maxPos once
-            if(pos==maxPos) maxPos++;
-            add(pos);
-            lastUBorderCandidates->push_back(t);
-        } else {
-            delete t;
-        }
-    }
+    ICompUniverse<T>::add(newElements);
+    delete newElements;
 }
 
 template<typename T>
-void SpecificCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint start)
+void SpecificCompUniverse<T>::add(IMonomial* monomial)
 {
-    stack<IMonomial*> _stack = stack<IMonomial*>();
-
-    // fill stack with extension candidates
-    uint64_t maxPos = 0;
-    for(uint iPol=start,ts=additions->size();iPol<ts;iPol++) {
-        IPolynomial<T>* p = additions->at(iPol);
-        for(uint iMonomial=0,ts2=p->size();iMonomial<ts2;iMonomial++) {
-            IMonomial* t = p->at(iMonomial)->getMonomial();
-            uint64_t pos = t->getPos();
-            if(pos>maxPos)
-                maxPos = pos;
-            _stack.push(t->copy());
+    for(int i=0;i<U->size();i++) {
+        if(monomial->divides(U->at(i)->getMonomial())) {
+            return;
+        }
+        else if(U->at(i)->getMonomial()->divides(monomial)) {
+            U->remove(i);
+            i--;
         }
     }
-
-    // extend by the maxima first, otherwise we might have inefficient many memory reallocations
-    add(maxPos);
-
-    // finally, add the remaining monomials and their divisors
-    while(!_stack.empty()) {
-        IMonomial* t = _stack.top();
-        uint64_t pos = t->getPos();
-        _stack.pop();
-
-        if(!contains(pos) || pos==maxPos) {
-            // only allow children of maxPos once
-            if(pos==maxPos) maxPos++;
-            add(pos);
-            lastUBorderCandidates->push_back(t->copy());
-            for(uint i=0;i<ICompUniverse<T>::indet;i++) {
-                if(t->at(i)>0) {
-                    IMonomial* tNew = t->copy();
-                    tNew->extend(i,-1);
-                    _stack.push(tNew);
-                }
-            }
-        }
-
-        delete t;
-    }
+    U->push(new Term<T>(1,monomial->copy()));
 }
 
 template class SpecificCompUniverse<uint64_t>;
 template class SpecificCompUniverse<int64_t>;
-
-
-//########## SpecificCompUniverseNoBorderLog ###############################
-
-template<typename T>
-SpecificCompUniverseNoBorderLog<T>::SpecificCompUniverseNoBorderLog(uint indet)
-: SpecificCompUniverse<T>(indet)
-{
-
-}
-
-template<typename T>
-SpecificCompUniverseNoBorderLog<T>::~SpecificCompUniverseNoBorderLog()
-{
-
-}
-
-template<typename T>
-void SpecificCompUniverseNoBorderLog<T>::addBorder()
-{
-    // this class is more efficient when adding polynomials by ignoring the need to take care of the border.
-    // This means, of course, that the border can't be used => Exception
-    NOT_IMPLEMENTED;
-}
-
-template<typename T>
-void SpecificCompUniverseNoBorderLog<T>::add(IOwningList<IPolynomial<T>*>* additions,uint start)
-{
-    stack<IMonomial*> _stack = stack<IMonomial*>();
-
-    // fill stack with extension candidates
-    uint64_t maxPos = 0;
-    for(uint iPol=start,ts=additions->size();iPol<ts;iPol++) {
-        IPolynomial<T>* p = additions->at(iPol);
-        for(uint iMonomial=0,ts2=p->size();iMonomial<ts2;iMonomial++) {
-            IMonomial* t = p->at(iMonomial)->getMonomial();
-            uint64_t pos = t->getPos();
-            if(pos>maxPos)
-                maxPos = pos;
-            _stack.push(t->copy());
-        }
-    }
-
-    // extend by the maxima first, otherwise we might have inefficient many memory reallocations
-    SpecificCompUniverse<T>::add(maxPos);
-
-    // finally, add the remaining monomials and their divisors
-    while(!_stack.empty()) {
-        IMonomial* t = _stack.top();
-        uint64_t pos = t->getPos();
-        _stack.pop();
-
-        if(!SpecificCompUniverse<T>::contains(pos) || pos==maxPos) {
-             // only allow children of maxPos once
-            if(pos==maxPos) maxPos++;
-            SpecificCompUniverse<T>::add(pos);
-            for(uint i=0;i<ICompUniverse<T>::indet;i++) {
-                if(t->at(i)>0) {
-                    IMonomial* tNew = t->copy();
-                    tNew->extend(i,-1);
-                    _stack.push(tNew);
-                }
-            }
-        }
-
-        delete t;
-    }
-}
-
-template class SpecificCompUniverseNoBorderLog<uint64_t>;
-template class SpecificCompUniverseNoBorderLog<int64_t>;
 
 } // namespace borderbasis

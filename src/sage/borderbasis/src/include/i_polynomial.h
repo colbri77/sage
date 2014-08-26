@@ -16,6 +16,7 @@ class IPolynomial
 
         virtual void push(TAKE_OWN Term<T>* term) = 0;
         virtual void push_back(TAKE_OWN Term<T>* term) = 0;
+        virtual void remove(uint index) = 0;
 
         virtual uint getIndet() const = 0;
         virtual uint size() const = 0;

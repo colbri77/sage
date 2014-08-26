@@ -17,6 +17,7 @@ class Polynomial : public IPolynomial<T>
 
         virtual void push(TAKE_OWN Term<T>* term) OVERRIDE;
         virtual void push_back(TAKE_OWN Term<T>* term) OVERRIDE;
+        virtual void remove(uint index) OVERRIDE;
 
         virtual uint getIndet() const OVERRIDE;
         virtual uint size() const OVERRIDE;

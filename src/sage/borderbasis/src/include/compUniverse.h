@@ -2,7 +2,7 @@
 #define __COMPUNIVERSE_H__
 
 #include "owningVector.h"
-#include "i_polynomial.h"
+#include "polynomial.h"
 
 namespace borderbasis {
 
@@ -25,6 +25,7 @@ public:
     virtual bool contains(IMonomial* monomial) const;
     virtual void add(IOwningList<IPolynomial<T>*>* additions,uint start);
     virtual void add(IOwningList<IPolynomial<T>*>* additions);
+    virtual void add(IMonomial* monomial);
 
 protected:
     uint indet;
@@ -63,26 +64,13 @@ public:
     virtual uint getMaxDegree() const OVERRIDE;
     virtual uint64_t getMaxPos() const OVERRIDE;
     virtual bool contains(uint64_t pos) const OVERRIDE;
+    virtual bool contains(IMonomial* monomial) const OVERRIDE;
     virtual void add(uint64_t pos) OVERRIDE;
     virtual void addBorder() OVERRIDE;
-    virtual void add(IOwningList<IPolynomial<T>*>* additions,uint start) OVERRIDE;
+    virtual void add(IMonomial* monomial) OVERRIDE;
 
 private:
-    uint8_t* U;
-    uint64_t uLen;
-    uint uBlocks;
-    OwningVector<IMonomial*>* lastUBorderCandidates;
-};
-
-template<typename T>
-class SpecificCompUniverseNoBorderLog : public SpecificCompUniverse<T>
-{
-public:
-    SpecificCompUniverseNoBorderLog(uint indet);
-    virtual ~SpecificCompUniverseNoBorderLog();
-
-    virtual void addBorder() OVERRIDE DONT_USE;
-    virtual void add(IOwningList<IPolynomial<T>*>* additions,uint start) OVERRIDE;
+    Polynomial<T>* U;
 };
 
 } // namespace borderbasis

@@ -104,6 +104,15 @@ void Polynomial<T>::incrementAtIndet(uint index)
     }
 }
 
+template<typename T>
+void Polynomial<T>::remove(uint index)
+{
+    typename vector<Term<T>*>::iterator it=rep->begin();
+    it += index;
+    delete rep->at(index);
+    rep->erase(it);
+}
+
 template class Polynomial<uint64_t>;
 template class Polynomial<int64_t>;
 
