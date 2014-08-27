@@ -224,7 +224,8 @@ cdef class PyBorderBasisTools_uint64:
                     pass
                 for expPos in range(0,self.indet):
                     exp = exponents[expPos]
-                    monomial.set(expPos,exp)
+                    if(exp>0):
+                        monomial.set(expPos,exp)
                 term = new Term[uint64_t](coef,monomial)
                 pol.push(term)
             result.push_back(<IPolynomial_uint64*>(pol))
@@ -295,8 +296,7 @@ cdef class PyBorderBasisTools_uint64:
 
     cdef _get_dict(self,polynomial,variables):
         r"""
-        Builds a dictionary from the given polynomial. In the best case, this is just polynomial.dict(),
-        worst case we have to construct it ourselfes.
+        Builds a dictionary from the given polynomial.
 
         INPUT::
 
@@ -317,11 +317,29 @@ cdef class PyBorderBasisTools_uint64:
             for term in polynomial.terms():
                 key = [0]*(len(variables))
                 for var in term.variables():
-                    key[mapping[var]] = 1
+                    key[mapping[var]] = 1 #only option in BooleanPolynomial
                 key = tuple(key)
                 result[key] = 1
             return result
         else:
-            return polynomial.dict()
+            result = {}
+            mapping = {}
+            curPos = 0
+            for var in variables:
+                mapping[var] = curPos
+                curPos = curPos + 1
+            for term in polynomial.monomials():
+                key = [0]*(len(variables))
+                exps = term.exponents()[0]
+                pos = len(exps)
+                for var in term.variables():
+                    pos = pos - 1
+                    while exps[pos]==0 and pos>=0:
+                        pos = pos - 1
+                    key[mapping[var]] = exps[pos]
+                key = tuple(key)
+                result[key] = term.coefficients()[0]
+            return result
+
 
 

@@ -67,7 +67,7 @@ private:
     void extend(IOwningList<IPolynomial<T>*>* in,bool isBasis);
     void getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolynomial<T>* out);
     bool checkOrderIdeal(const IPolynomial<T>* orderIdeal);
-    void addAndReduce(IOwningList<IPolynomial<T>*>* in,uint pos);
+    void addAndReduce(IOwningList<IPolynomial<T>*>* in,int pos);
 };
 
 }

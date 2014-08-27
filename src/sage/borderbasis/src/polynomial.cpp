@@ -34,8 +34,11 @@ TAKE_OWN Polynomial<T>* Polynomial<T>::copy() const
 template<typename T>
 void Polynomial<T>::push(TAKE_OWN Term<T>* term)
 {
-    if(term->getCoef()==0)
+    if(term->getCoef()==0) {
+        delete term->getMonomial();
+        delete term;
         return;
+    }
 
     for(typename vector<Term<T>*>::iterator it=rep->begin();it!=rep->end();it++) {
         if((*it)->compare(term)<=0) {

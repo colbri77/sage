@@ -15,7 +15,6 @@
 
 namespace borderbasis {
 
-
 template<typename T>
 uint BorderBasisTools<T>::processors = omp_get_num_procs();
 
@@ -197,7 +196,7 @@ void BorderBasisTools<T>::calculateBasis(const IOwningList<IPolynomial<T>*>* in,
     for(bool firstRun=true; true; firstRun=false) {
         // 2. Extend the polynomial set according to the computational universe
         extend(&tmpVec,!firstRun);
-
+        
         // 3. The result is already in row echelon form
         // 4. Read the candidate order ideal from the set
         getOrderIdeal(&tmpVec,orderIdeal);
@@ -273,9 +272,8 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal)
     return result;
 }
 
-
 template<typename T>
-void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,uint pos)
+void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,int pos)
 {
     uint64_t cmpCounter = 0;
 
@@ -300,18 +298,20 @@ void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,uint pos
         }
 
         memset(checkList,0,in->size()/8+1);
-        IMonomial* leading = p->at(0)->getMonomial();
-
+        uint leadPos = 0;
+ 
         // we prevent running through aleady checked bigger polynomials by only remembering the lower ones.
         for(int checkPos=0;checkPos<pos;checkPos++) {
             if((checkList[checkPos/8]>>(checkPos%8))&1) // already checked, its too big
                 continue;
+            IMonomial* leading = p->at(leadPos)->getMonomial();
 
             cmpCounter++;
             int cmp = in->at(checkPos)->at(0)->getMonomial()->compare(leading);
             if(cmp>0) {
                 // not a hit and too big for future monomials => ignore in the future
                 checkList[checkPos/8] |= (1>>(checkPos%8));
+                leadPos = 0;
             }
             else if(cmp==0) {
                 // a hit! Reduce the current polynomial and start from the beginning.
@@ -320,8 +320,18 @@ void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,uint pos
                 p->subtract(in->at(checkPos),field);
                 if(p->isZero())
                     break;
-                leading = p->at(0)->getMonomial();
+                leadPos = 0;
                 checkPos = -1;
+            }
+            else {
+                // the new polynomial is too big => forward the leading term one step
+                leadPos++;
+                if(leadPos==p->size()) {
+                    checkList[checkPos/8] |= (1>>(checkPos%8));
+                    leadPos = 0;
+                } else {
+                    checkPos--;
+                }
             }
         }
 
@@ -333,7 +343,7 @@ void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,uint pos
         }
 
         // if the polynomial is not zero, we reduce all the other polynomials to make future calls faster
-        leading = p->at(0)->getMonomial();
+        IMonomial* leading = p->at(0)->getMonomial();
         for(uint checkPos=0;checkPos<pos;checkPos++) {
             IPolynomial<T>* curPol = in->at(checkPos);
             int cmp = 1;
@@ -428,7 +438,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         // 6. If the OptLevel is high enough, we have to extend the comp. universe
         if(optimization!=NONE)
             universe->add(in,field ? lastOriginalPolynomial : 0);
-
+        
         // 7. If the size didn't change, its still the same basis and we're done.
         if(in->size()==lastOriginalPolynomial+1)
             break;
