@@ -328,6 +328,8 @@ cdef class PyBorderBasisTools_uint64:
             for var in variables:
                 mapping[var] = curPos
                 curPos = curPos + 1
+            termCtr = 0
+            coefficients = polynomial.coefficients()
             for term in polynomial.monomials():
                 key = [0]*(len(variables))
                 exps = term.exponents()[0]
@@ -338,7 +340,13 @@ cdef class PyBorderBasisTools_uint64:
                         pos = pos - 1
                     key[mapping[var]] = exps[pos]
                 key = tuple(key)
-                result[key] = term.coefficients()[0]
+                coef = 1
+                try:
+                    coef = (int)(coefficients[termCtr].int_repr())
+                except:
+                    pass
+                result[key] = coef
+                termCtr = termCtr + 1
             return result
 
 

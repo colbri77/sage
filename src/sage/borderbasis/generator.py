@@ -141,7 +141,7 @@ class BBGenerator(SageObject):
 
         The default optimization level is 'enhanced'. For the levels 'optimistic' and 'experimental', termination can no longer be proven.
     """
-    def __init__(self, optimization="enhanced", use_positions=True, use_matrix=False):
+    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True):
         r"""
         Generates a ``BBGenerator`` and initializes it with the chosen optimization level
 
