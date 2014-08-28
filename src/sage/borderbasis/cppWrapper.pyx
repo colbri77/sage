@@ -278,12 +278,15 @@ cdef class PyBorderBasisTools_uint64:
 
             A sage polynomial equivalent to the C++ polynomial
         """
-        variables = ring.variable_names_recursive()
         sagePol = var(variables[0])-var(variables[0])
         termSize = nativePol.thisptr.size()
         for termPos in range(0,termSize):
             term = nativePol.thisptr.at(termPos)
             coef = term.getCoef()
+            try:
+                coef = ring.base_ring().fetch_int(coef)
+            except:
+                pass
             monomial = term.getMonomial()
             monomialSize = monomial.getIndet()
             sageMon = 1
@@ -333,18 +336,21 @@ cdef class PyBorderBasisTools_uint64:
             for term in polynomial.monomials():
                 key = [0]*(len(variables))
                 exps = term.exponents()[0]
-                pos = len(exps)
+                pos = -1
                 for var in term.variables():
-                    pos = pos - 1
-                    while exps[pos]==0 and pos>=0:
-                        pos = pos - 1
+                    pos = pos + 1
+                    while exps[pos]==0 and pos<len(exps):
+                        pos = pos + 1
                     key[mapping[var]] = exps[pos]
                 key = tuple(key)
                 coef = 1
                 try:
                     coef = (int)(coefficients[termCtr].int_repr())
                 except:
-                    pass
+                    try:
+                        coef = (int)(coefficients[termCtr])
+                    except:
+                        pass
                 result[key] = coef
                 termCtr = termCtr + 1
             return result
