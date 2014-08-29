@@ -21,7 +21,7 @@ uint BorderBasisTools<T>::processors = omp_get_num_procs();
 template<typename T>
 BorderBasisTools<T>::BorderBasisTools(IField<T>* field,
                      PolynomialFactory<T>* polFactory,
-                     MonomialFactory* monFactory,
+                     IMonomialFactory* monFactory,
                      uint indeterminates,
                      OptLevel optimization)
 : field(field),
@@ -33,7 +33,7 @@ statistics(new Statistics()),
 optimization(optimization),
 universe(NULL),
 getPosSupport(monFactory->supportsGetPos())
-{ 
+{
     if(getPosSupport) {
         switch(optimization) {
         case NONE: universe = new LinearCompUniverse<T>(indet); break;
@@ -54,7 +54,7 @@ template<typename T>
 BorderBasisTools<T>::BorderBasisTools(int dummyNeccessaryForCython,
                      IMatrixFactory<T>* matrixFactory,
                      PolynomialFactory<T>* polFactory,
-                     MonomialFactory* monFactory,
+                     IMonomialFactory* monFactory,
                      uint indeterminates,
                      OptLevel optimization)
 : field(NULL),
@@ -111,7 +111,7 @@ void BorderBasisTools<T>::toSimpleBasis(IOwningList<IPolynomial<T>*>* in,bool fu
 
     uint columns = index->getColumns();
     uint rows = in->size();
-
+    
     IMatrix<T>* matrix = matrixFactory->create(rows,columns);
 
     statistics->logMatrix(rows,columns);
@@ -196,7 +196,7 @@ void BorderBasisTools<T>::calculateBasis(const IOwningList<IPolynomial<T>*>* in,
     for(bool firstRun=true; true; firstRun=false) {
         // 2. Extend the polynomial set according to the computational universe
         extend(&tmpVec,!firstRun);
-        
+
         // 3. The result is already in row echelon form
         // 4. Read the candidate order ideal from the set
         getOrderIdeal(&tmpVec,orderIdeal);
@@ -299,7 +299,7 @@ void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,int pos)
 
         memset(checkList,0,in->size()/8+1);
         uint leadPos = 0;
- 
+
         // we prevent running through aleady checked bigger polynomials by only remembering the lower ones.
         for(int checkPos=0;checkPos<pos;checkPos++) {
             if((checkList[checkPos/8]>>(checkPos%8))&1) // already checked, its too big
@@ -371,7 +371,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         if(field) addAndReduce(in,0);
         else toSimpleBasis(in,true);
     }
-
+ 
     // 2. We create a map to store hashes of all processed polynomials so that we can ignore
     //    them when they come back up later. If the value in the list is false, then they are
     //    in the "to do"-list, but have not been processed yet - they don't need to be added.
@@ -410,7 +410,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
                 hash = p->hash();
                 it = polMap.find(hash);
                 // 3.5 If offspring has never been seen before, add it to the list
-                if(it==polMap.end()) {
+                if(it==polMap.end()) { 
                     polMap[hash] = false;
                     in->push_back(p);
                 } else {
@@ -432,13 +432,13 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         int limit = (field ? lastOriginalPolynomial : -1);
         for(int i=(int)in->size()-1;i>limit;i--) {
             if(!universe->contains(in->at(i)->at(0)->getMonomial()))
-                in->remove(i);
+               in->remove(i);
         }
 
         // 6. If the OptLevel is high enough, we have to extend the comp. universe
         if(optimization!=NONE)
             universe->add(in,field ? lastOriginalPolynomial : 0);
-        
+
         // 7. If the size didn't change, its still the same basis and we're done.
         if(in->size()==lastOriginalPolynomial+1)
             break;
@@ -450,7 +450,7 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
 {
     out->clear();
 
-    IMonomial* t = monFactory->create(indet);
+    IMonomial* t = monFactory->create();
     IMonomial* tTemp = NULL;
 
     IPolynomial<T>* p = polFactory->create(indet);
@@ -468,11 +468,11 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
             tTemp = t;
             t = t->next();
             if(!inUniverse)
-                delete tTemp;
+                tTemp->del();
         }
         tTemp = t;
         t = t->next();
-        delete tTemp;
+        tTemp->del();
     }
     while(!universe->beyondLastElement(t)) {
         bool inUniverse = universe->contains(t);
@@ -481,10 +481,10 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
         tTemp = t;
         t = t->next();
         if(!inUniverse)
-            delete tTemp;
+            tTemp->del();
     }
     delete p;
-    delete t;
+    t->del();
 }
 
 template class BorderBasisTools<uint64_t>;

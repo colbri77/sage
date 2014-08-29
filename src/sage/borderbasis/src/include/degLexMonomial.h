@@ -2,23 +2,22 @@
 #define __DEGLEXMONOMIAL_H__
 
 #include "i_monomial.h"
+#include "fastFlexibleArray.h"
 
 namespace polynomial {
+
+class MonomialFactoryDegLex;
+class MonomialFactoryNoOrderPos;
 
 class DegLexMonomial : public IMonomial
 {
 public:
-    DegLexMonomial(uint64_t pos, uint indet);
-    DegLexMonomial(uint indet);
-    DegLexMonomial(uint values[], uint indet);
-    virtual ~DegLexMonomial();
-
     virtual const uint& at(uint const& index) const OVERRIDE;
-    virtual void set(uint index, uint value) OVERRIDE;
+    virtual TAKE_OWN IMonomial* set(uint index, uint value) OVERRIDE;
 
     virtual uint getIndet() const OVERRIDE;
     virtual uint getDegree() const OVERRIDE;
-    virtual void extend(uint index, int value) OVERRIDE;
+    virtual TAKE_OWN IMonomial* extend(uint index, int value) OVERRIDE;
     virtual TAKE_OWN IMonomial* copy() const OVERRIDE;
     virtual TAKE_OWN IMonomial* next() const OVERRIDE;
     virtual bool divides(const IMonomial* numerator) const OVERRIDE;
@@ -27,11 +26,21 @@ public:
     virtual bool supportsGetPos() const OVERRIDE;
     virtual uint64_t getPos() const OVERRIDE;
 
+    virtual void del() OVERRIDE;
+
 private:
     uint* rep;
     uint indet;
     uint64_t pos;
     uint degree;
+    FastFlexibleArray* monomBox;
+
+    friend class MonomialFactoryDegLex;
+    friend class FastFlexibleArray;
+
+    DegLexMonomial(uint64_t pos, uint indet, FastFlexibleArray* monomBox);
+    DegLexMonomial(uint indet, FastFlexibleArray* monomBox);
+    virtual ~DegLexMonomial();
 
     void recalcPos();
     void recalcDegree();
@@ -41,16 +50,12 @@ private:
 class DegLexMonomialNoOrderPos : public IMonomial
 {
 public:
-    DegLexMonomialNoOrderPos(uint indet);
-    DegLexMonomialNoOrderPos(uint values[], uint indet);
-    virtual ~DegLexMonomialNoOrderPos();
-
     virtual const uint& at(uint const& index) const OVERRIDE;
-    virtual void set(uint index, uint value) OVERRIDE;
+    virtual TAKE_OWN IMonomial* set(uint index, uint value) OVERRIDE;
 
     virtual uint getIndet() const OVERRIDE;
     virtual uint getDegree() const OVERRIDE;
-    virtual void extend(uint index, int value) OVERRIDE;
+    virtual TAKE_OWN IMonomial* extend(uint index, int value) OVERRIDE;
     virtual TAKE_OWN IMonomial* copy() const OVERRIDE;
     virtual TAKE_OWN IMonomial* next() const OVERRIDE;
     virtual bool divides(const IMonomial* numerator) const OVERRIDE;
@@ -65,6 +70,11 @@ private:
     uint* rep;
     uint indet;
     uint degree;
+
+    friend class MonomialFactoryNoOrderPos;
+
+    DegLexMonomialNoOrderPos(uint indet);
+    virtual ~DegLexMonomialNoOrderPos();
 
     void recalcDegree();
 };

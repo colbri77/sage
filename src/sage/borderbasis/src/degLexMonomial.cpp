@@ -6,36 +6,26 @@ namespace polynomial {
 
 //----- DegLexMonomial ------------------------------------
 
-DegLexMonomial::DegLexMonomial(uint64_t pos, uint indet)
+DegLexMonomial::DegLexMonomial(uint64_t pos, uint indet,FastFlexibleArray* monomBox)
 : IMonomial(IMonomial::DEGLEX),
 rep(new uint[indet]()),
 indet(indet),
-pos(0),
-degree(0)
+pos(pos),
+degree(0),
+monomBox(monomBox)
 {
     initFromPos(pos);
 }
 
-DegLexMonomial::DegLexMonomial(uint indet)
+DegLexMonomial::DegLexMonomial(uint indet,FastFlexibleArray* monomBox)
 : IMonomial(IMonomial::DEGLEX),
 rep(new uint[indet]()),
 indet(indet),
 pos(0),
-degree(0)
+degree(0),
+monomBox(monomBox)
 {
 
-}
-
-DegLexMonomial::DegLexMonomial(uint values[], uint indet)
-: IMonomial(IMonomial::DEGLEX),
-rep(new uint[indet]),
-indet(indet),
-pos(0),
-degree(0)
-{
-    memcpy(rep,values,sizeof(uint)*indet);
-    recalcDegree();
-    recalcPos();
 }
 
 DegLexMonomial::~DegLexMonomial()
@@ -49,12 +39,38 @@ const uint& DegLexMonomial::at(uint const& index) const
     return rep[index];
 }
 
-void DegLexMonomial::set(uint index, uint value)
+TAKE_OWN IMonomial* DegLexMonomial::set(uint index, uint value)
 {
     ENSURE(index < indet, "DegLexMonomial::set(index): index is out of bounds");
+    uint repBackup = rep[index];
+    uint degBackup = degree;
+    uint64_t posBackup = pos;
+
     degree += (value-rep[index]);
     rep[index] = value;
     recalcPos();
+
+    uint64_t newPos = pos;
+
+    rep[index] = repBackup;
+    degree = degBackup;
+    pos = posBackup;
+
+    DegLexMonomial* result = (DegLexMonomial*)(monomBox->get(newPos));
+
+    if(result == NULL) {
+        result = new DegLexMonomial(indet,monomBox);
+
+        for(uint i=0;i<indet;i++)
+            result->rep[i] = rep[i];
+        result->degree = degree + (value-rep[index]);
+        result->rep[index] = value;
+        result->pos = newPos;
+
+        monomBox->add(newPos,result);
+    }
+
+    return (IMonomial*)result;
 }
 
 uint DegLexMonomial::getIndet() const
@@ -67,55 +83,83 @@ uint DegLexMonomial::getDegree() const
     return degree;
 }
 
-void DegLexMonomial::extend(uint index, int value)
+TAKE_OWN IMonomial* DegLexMonomial::extend(uint index, int value)
 {
     ENSURE(index < indet, "DegLexMonomial::extend(index,value): index is out of bounds");
     ENSURE(value > 0 || rep[index] >= (uint)(-value), "DegLexMonomial::extend(index,value): value would make index negative");
+
+    uint64_t posBackup = pos;
+    uint repBackup = rep[index];
+    uint degBackup = degree;
+
     rep[index] += value;
     degree += value;
     recalcPos();
+    
+    uint64_t newPos = pos;
+    pos = posBackup;
+    degree = degBackup;
+    rep[index] = repBackup;
+
+    DegLexMonomial* result = (DegLexMonomial*)(monomBox->get(newPos));
+
+    if(result == NULL) {
+        result = new DegLexMonomial(indet,monomBox);
+
+        for(uint i=0;i<indet;i++)
+            result->rep[i] = rep[i];
+        result->rep[index] += value;
+        result->degree = degree + value;
+        result->pos = newPos;
+
+        monomBox->add(newPos,result);
+    }
+    
+    return (IMonomial*)result;
 }
 
 TAKE_OWN IMonomial* DegLexMonomial::copy() const
 {
-    DegLexMonomial* result = new DegLexMonomial(indet);
-
-    for(uint i=0;i<indet;i++)
-        result->rep[i] = rep[i];
-
-    result->pos = pos;
-    result->degree = degree;
-    return result;
+    return (IMonomial*)this;
 }
 
 TAKE_OWN IMonomial* DegLexMonomial::next() const
 {
-    DegLexMonomial* result = (DegLexMonomial*)copy();
+    DegLexMonomial* result = (DegLexMonomial*)(monomBox->get(pos+1));
 
-    if(degree==0) {
-        result->rep[indet-1] = 1;
-    } else if(indet==1) {
-        result->rep[0]++;
-    } else if(rep[indet-1]>0) {
-        result->rep[indet-1]--;
-        result->rep[indet-2]++;
-    } else {
-        uint nextNonZero = indet-2;
-        for(;rep[nextNonZero]==0;nextNonZero--);
-        if(nextNonZero==0) {
-            result->rep[0] = 0;
-            result->rep[indet-1] = degree+1;
+    if(result == NULL) {
+        result = new DegLexMonomial(indet,monomBox);
+
+        for(uint i=0;i<indet;i++)
+            result->rep[i] = rep[i];
+
+        if(degree==0) {
+            result->rep[indet-1] = 1;
+        } else if(indet==1) {
+            result->rep[0]++;
+        } else if(rep[indet-1]>0) {
+            result->rep[indet-1]--;
+            result->rep[indet-2]++;
         } else {
-            result->rep[indet-1] = rep[nextNonZero]-1;
-            result->rep[nextNonZero] = 0;
-            result->rep[nextNonZero-1] = rep[nextNonZero-1]+1;
+            uint nextNonZero = indet-2;
+            for(;rep[nextNonZero]==0;nextNonZero--);
+            if(nextNonZero==0) {
+                result->rep[0] = 0;
+                result->rep[indet-1] = degree+1;
+            } else {
+                result->rep[indet-1] = rep[nextNonZero]-1;
+                result->rep[nextNonZero] = 0;
+                result->rep[nextNonZero-1] = rep[nextNonZero-1]+1;
+            }
         }
+
+        result->pos = pos+1;
+        result->recalcDegree();
+
+        monomBox->add(pos+1,result);
     }
 
-    result->pos = pos+1;
-    result->recalcDegree();
-
-    return result;
+    return (IMonomial*)result;
 }
 
 bool DegLexMonomial::divides(const IMonomial* numerator) const
@@ -290,6 +334,11 @@ void DegLexMonomial::initFromPos(uint64_t pos)
     rep[indet-1] = degree-runningDegreeCount;
 }
 
+void DegLexMonomial::del()
+{
+    // left blank on purpose
+}
+
 //----- DegLexMonomialNoOrderPos ------------------------------------
 
 DegLexMonomialNoOrderPos::DegLexMonomialNoOrderPos(uint indet)
@@ -299,16 +348,6 @@ indet(indet),
 degree(0)
 {
 
-}
-
-DegLexMonomialNoOrderPos::DegLexMonomialNoOrderPos(uint values[], uint indet)
-: IMonomial(IMonomial::DEGLEX),
-rep(new uint[indet]),
-indet(indet),
-degree(0)
-{
-    memcpy(rep,values,sizeof(uint)*indet);
-    recalcDegree();
 }
 
 DegLexMonomialNoOrderPos::~DegLexMonomialNoOrderPos()
@@ -322,11 +361,12 @@ const uint& DegLexMonomialNoOrderPos::at(uint const& index) const
     return rep[index];
 }
 
-void DegLexMonomialNoOrderPos::set(uint index, uint value)
+TAKE_OWN IMonomial* DegLexMonomialNoOrderPos::set(uint index, uint value)
 {
     ENSURE(index < indet, "DegLexMonomial::set(index): index is out of bounds");
     degree += (value-rep[index]);
     rep[index] = value;
+    return this;
 }
 
 uint DegLexMonomialNoOrderPos::getIndet() const
@@ -339,12 +379,13 @@ uint DegLexMonomialNoOrderPos::getDegree() const
     return degree;
 }
 
-void DegLexMonomialNoOrderPos::extend(uint index, int value)
+TAKE_OWN IMonomial* DegLexMonomialNoOrderPos::extend(uint index, int value)
 {
     ENSURE(index < indet, "DegLexMonomial::extend(index,value): index is out of bounds");
     ENSURE(value > 0 || rep[index] >= (uint)(-value), "DegLexMonomial::extend(index,value): value would make index negative");
     rep[index] += value;
     degree += value;
+    return this;
 }
 
 TAKE_OWN IMonomial* DegLexMonomialNoOrderPos::copy() const

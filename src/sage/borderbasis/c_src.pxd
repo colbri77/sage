@@ -33,12 +33,15 @@ cdef extern from "src/include/statistics.h" namespace "borderbasis":
         MatrixProp maxMatrix
 
 cdef extern from "src/include/monomialFactory.h" namespace "polynomial":
-    cdef enum MonomialType:
-        MONOMIALTYPE_DEGLEX
-        MONOMIALTYPE_DEGLEX_NO_ORDER_POS
-    cdef cppclass MonomialFactory:
-        MonomialFactory(MonomialType t) except + 
-        IMonomial* create(unsigned int indet) 
+    cdef cppclass IMonomialFactory:
+        IMonomialFactory() except + 
+        IMonomial* create()
+    cdef cppclass MonomialFactoryNoOrderPos:
+        MonomialFactoryNoOrderPos(unsigned int indet) except +
+        IMonomial* create()
+    cdef cppclass MonomialFactoryDegLex:
+        MonomialFactoryDegLex(unsigned int indet) except +
+        IMonomial* create()
 
 cdef extern from "src/include/i_polynomial.h" namespace "polynomial":
     cdef cppclass IPolynomial_uint64:
@@ -71,8 +74,6 @@ cdef extern from "src/include/polynomialFactory.h" namespace "polynomial":
 cdef extern from "src/include/field.h" namespace "math":
     cdef cppclass IField[T]:
         IField() except +
-
-cdef extern from "src/include/field.h" namespace "math":
     cdef cppclass FieldFn:
         FieldFn(uint64_t pol) except +
 
@@ -82,7 +83,7 @@ cdef extern from "src/include/i_matrixFactory.h" namespace "math":
 
 cdef extern from "src/include/matrixFactory_fn.h" namespace "math":
     cdef cppclass MatrixFactory_Fn:
-        MatrixFactory_Fn(uint64_t minPolynomial)
+        MatrixFactory_Fn(uint64_t minPolynomial) except +
 
 cdef extern from "src/include/borderBasisTools.h" namespace "borderbasis":
     cdef enum OptLevel:
@@ -93,13 +94,13 @@ cdef extern from "src/include/borderBasisTools.h" namespace "borderbasis":
     cdef cppclass BorderBasisTools[T]:
         BorderBasisTools(IField[T]* field,
                          PolynomialFactory[T]* polFactory,
-                         MonomialFactory* monFactory,
+                         IMonomialFactory* monFactory,
                          unsigned int indeterminates,
                          OptLevel optimizations) except +
         BorderBasisTools(int dummyNecessaryForPython,
                          IMatrixFactory[T]* matrixFactory,
                          PolynomialFactory[T]* polFactory,
-                         MonomialFactory* monFactory,
+                         IMonomialFactory* monFactory,
                          unsigned int indeterminates,
                          OptLevel optimizations) except +
         void calculateBasis(void* i,

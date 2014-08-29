@@ -222,7 +222,7 @@ class BBGenerator(SageObject):
         else:
             matrix = PyMatrixFactory_Fn_uint64(modPolynomial)
         polynomialFactory = PyPolynomialFactory_uint64()
-        monFactory = PyMonomialFactory(self.use_positions)
+        monFactory = PyMonomialFactory(self.use_positions,generators.nvariables())
         bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization)
 
         basis,orderIdeal = bbt.calculate_basis(generators)

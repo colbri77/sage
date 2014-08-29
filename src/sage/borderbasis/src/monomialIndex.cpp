@@ -24,7 +24,7 @@ tableColumns(0)
     // 1. Find the biggest monomial, it defines how much memory we have to use during the index generation
     #pragma omp parallel private(i) shared(generators,limit,maxPos,bs)
     {
-       #pragma omp for schedule(dynamic,bs) nowait
+        #pragma omp for schedule(dynamic,bs) nowait
         for(i=0;i<limit;i++) {
             if(generators->at(i)->size()==0) continue;
             uint64_t uTmp = generators->at(i)->at(0)->getMonomial()->getPos();
@@ -35,7 +35,7 @@ tableColumns(0)
             }
         }
     }
-    
+
     // 2. Decide if we can create a fast mapping or if that would need to much memory
     bool useMemoryExpensive = (maxPos<(uint64_t)MEMORY_BORDER);
 
@@ -47,7 +47,7 @@ tableColumns(0)
 
     limit = generators->size();
     bs = max((uint)1,limit/MonomialIndex<T>::processors);
-    
+
     // 3. Fill the table - each unique monomial is placed at its exact position
     #pragma omp parallel private(i) shared(limit,bs,generators)
     {
@@ -106,7 +106,7 @@ MonomialIndex<T>::~MonomialIndex()
 
 template<typename T>
 uint MonomialIndex<T>::toIndex(const IMonomial* monomial) const
-{ 
+{
     if(cTableFast!=NULL)
         return cTableFast[monomial->getPos()].integer;
     else

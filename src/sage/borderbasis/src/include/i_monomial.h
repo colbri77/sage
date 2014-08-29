@@ -2,10 +2,11 @@
 #define __I_MONOMIAL_H__
 
 #include "definitions.h"
+#include "fastFlexibleArray.h"
 
 namespace polynomial {
 
-class IMonomial
+class IMonomial : public FFArrayElement
 {
 public:
     enum termOrder {
@@ -15,14 +16,15 @@ public:
     const termOrder termOrdering;
 
     IMonomial(termOrder termOrdering);
-    virtual ~IMonomial();
 
     virtual const uint& at(uint const& index) const = 0;
-    virtual void set(uint index, uint value) = 0;
+    // set() creates a (probably) new monomial, the old one should be considered deleted.
+    virtual TAKE_OWN IMonomial* set(uint index, uint value) = 0;
 
     virtual uint getIndet() const = 0;
     virtual uint getDegree() const = 0;
-    virtual void extend(uint index, int value) = 0;
+    // extend() creates a (probably) new monomial, the old one should be considered deleted.
+    virtual TAKE_OWN IMonomial* extend(uint index, int value) = 0;
     virtual TAKE_OWN IMonomial* copy() const = 0;
     virtual TAKE_OWN IMonomial* next() const = 0;
     virtual bool divides(const IMonomial* numerator) const = 0;
@@ -31,7 +33,11 @@ public:
     virtual bool supportsGetPos() const = 0;
     virtual uint64_t getPos() const = 0;
 
+    virtual void del();
     virtual int compare(const IMonomial* other) const;
+
+protected:
+    virtual ~IMonomial();
 };
 
 } // namespace polynomial

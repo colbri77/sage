@@ -31,11 +31,11 @@ cdef class PyMonomialFactory:
     r"""
     Parameter class, used to send C++ classes to python methods
     """
-    def __cinit__(self,use_positions):
+    def __cinit__(self,use_positions,indet):
         if use_positions:
-            self.thisptr = new MonomialFactory(MONOMIALTYPE_DEGLEX)
+            self.thisptr = <IMonomialFactory*>(new MonomialFactoryDegLex(indet))
         else:
-            self.thisptr = new MonomialFactory(MONOMIALTYPE_DEGLEX_NO_ORDER_POS)
+            self.thisptr = <IMonomialFactory*>(new MonomialFactoryNoOrderPos(indet))
     def __dealloc__(self):
         del self.thisptr
 
@@ -216,7 +216,7 @@ cdef class PyBorderBasisTools_uint64:
             values = self._get_dict(generator,pythonList.variables())
             pol = (<PyPolynomialFactory_uint64>(self.polFactory)).thisptr.create(self.indet)
             for exponents in values:
-                monomial = (<PyMonomialFactory>(self.monFactory)).thisptr.create(self.indet)
+                monomial = (<PyMonomialFactory>(self.monFactory)).thisptr.create()
                 coef = values[exponents]
                 try:
                     coef = (int)(coef.int_repr())
@@ -225,7 +225,7 @@ cdef class PyBorderBasisTools_uint64:
                 for expPos in range(0,self.indet):
                     exp = exponents[expPos]
                     if(exp>0):
-                        monomial.set(expPos,exp)
+                        monomial = <IMonomial*>(monomial.set(expPos,exp))
                 term = new Term[uint64_t](coef,monomial)
                 pol.push(term)
             result.push_back(<IPolynomial_uint64*>(pol))

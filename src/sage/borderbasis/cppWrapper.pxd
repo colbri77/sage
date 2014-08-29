@@ -7,7 +7,7 @@ cdef class PyIPolynomial_uint64:
     cdef IPolynomial[uint64_t]* thisptr
 
 cdef class PyMonomialFactory:
-    cdef MonomialFactory* thisptr
+    cdef IMonomialFactory* thisptr
 
 cdef class PyPolynomialFactory_uint64:
     cdef PolynomialFactory[uint64_t]* thisptr

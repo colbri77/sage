@@ -25,13 +25,13 @@ class BorderBasisTools
 public:
     BorderBasisTools(IField<T>* field,
                      PolynomialFactory<T>* polFactory,
-                     MonomialFactory* monFactory,
+                     IMonomialFactory* monFactory,
                      uint indeterminates,
                      OptLevel optimization);
     BorderBasisTools(int dummyNeccessaryForCython,
                      IMatrixFactory<T>* matrixFactory,
                      PolynomialFactory<T>* polFactory,
-                     MonomialFactory* monFactory,
+                     IMonomialFactory* monFactory,
                      uint indeterminates,
                      OptLevel optimization);
 
@@ -54,7 +54,7 @@ private:
     IField<T>* field;
     IMatrixFactory<T>* matrixFactory;
     PolynomialFactory<T>* polFactory;
-    MonomialFactory* monFactory;
+    IMonomialFactory* monFactory;
     uint indet;
     Statistics* statistics;
     OptLevel optimization;

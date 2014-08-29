@@ -24,5 +24,10 @@ int IMonomial::compare(const IMonomial* other) const
             (getPos()<other->getPos() ? -1 : 0);
 }
 
+void IMonomial::del()
+{
+    delete this;
+}
+
 
 } // namespace polynomial

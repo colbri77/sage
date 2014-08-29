@@ -21,7 +21,8 @@ coef(0)
 template<typename T>
 Term<T>::~Term()
 {
-    DEL_SAFE(monomial);
+    if(monomial!=NULL)
+        monomial->del();
 }
 
 template<typename T>

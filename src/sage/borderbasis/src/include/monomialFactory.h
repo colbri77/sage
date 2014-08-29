@@ -2,27 +2,50 @@
 #define __MONOMIALFACTORY_H__
 
 #include "i_monomial.h"
+#include "fastFlexibleArray.h"
 
 namespace polynomial {
 
-enum MonomialType {
-	MONOMIALTYPE_DEGLEX,
-	MONOMIALTYPE_DEGLEX_NO_ORDER_POS
-};
-
-class MonomialFactory
+class IMonomialFactory
 {
 public:
-    MonomialFactory(MonomialType type);
-    virtual ~MonomialFactory();
+    IMonomialFactory(){}
+    virtual ~IMonomialFactory(){}
 
-    virtual bool supportsGetPos() const;
+    virtual bool supportsGetPos() const = 0;
+    virtual TAKE_OWN IMonomial* create() const = 0;
+    virtual TAKE_OWN IMonomial* create(uint64_t pos) const = 0;
+};
 
-    virtual TAKE_OWN IMonomial* create(uint indet) const;
-    virtual TAKE_OWN IMonomial* create(uint64_t pos, uint indet) const;
+class MonomialFactoryNoOrderPos : public IMonomialFactory
+{
+public:
+    MonomialFactoryNoOrderPos(uint indet);
+    virtual ~MonomialFactoryNoOrderPos();
+
+    virtual bool supportsGetPos() const OVERRIDE;
+
+    virtual TAKE_OWN IMonomial* create() const OVERRIDE;
+    virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
 
 private:
-    MonomialType type;
+    uint indet;
+};
+
+class MonomialFactoryDegLex : public IMonomialFactory
+{
+public:
+    MonomialFactoryDegLex(uint indet);
+    virtual ~MonomialFactoryDegLex();
+
+    virtual bool supportsGetPos() const OVERRIDE;
+
+    virtual TAKE_OWN IMonomial* create() const OVERRIDE;
+    virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
+
+private:
+    FastFlexibleArray* monomials;
+    uint indet;
 };
 
 } // namespace polynomial

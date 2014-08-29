@@ -4,41 +4,72 @@
 
 namespace polynomial {
 
-MonomialFactory::MonomialFactory(MonomialType type)
-: type(type)
+//-----MonomialFactoryNoOrderPos-------------------------------
+
+MonomialFactoryNoOrderPos::MonomialFactoryNoOrderPos(uint indet)
+:IMonomialFactory(),
+indet(indet)
 {
 
 }
 
-MonomialFactory::~MonomialFactory()
+MonomialFactoryNoOrderPos::~MonomialFactoryNoOrderPos()
 {
 
 }
 
-bool MonomialFactory::supportsGetPos() const
+bool MonomialFactoryNoOrderPos::supportsGetPos() const
 {
-    IMonomial* tmp = create(1);
-    bool result = tmp->supportsGetPos();
-    delete tmp;
-    return result;
+    return false;
 }
 
-TAKE_OWN IMonomial* MonomialFactory::create(uint indet) const
+TAKE_OWN IMonomial* MonomialFactoryNoOrderPos::create() const
 {
-    if(type==MONOMIALTYPE_DEGLEX)
-        return (IMonomial*)new DegLexMonomial(indet);
-    else
-        return (IMonomial*)new DegLexMonomialNoOrderPos(indet);
+    return (IMonomial*)new DegLexMonomialNoOrderPos(indet);
 }
 
-TAKE_OWN IMonomial* MonomialFactory::create(uint64_t pos, uint indet) const
+TAKE_OWN IMonomial* MonomialFactoryNoOrderPos::create(uint64_t pos) const
 {
-    if(type==MONOMIALTYPE_DEGLEX) {
-        return (IMonomial*)new DegLexMonomial(pos, indet);
-    } else {
-        NOT_IMPLEMENTED;    // we can't do this with DEGLEX_NO_ORDER_POS
-        return NULL;
+    NOT_IMPLEMENTED;
+}
+
+//----------MonomialFactoryDegLex---------------------------------
+
+MonomialFactoryDegLex::MonomialFactoryDegLex(uint indet)
+: IMonomialFactory(),
+monomials(new FastFlexibleArray()),
+indet(indet)
+{
+    DegLexMonomial* one = new DegLexMonomial(indet,monomials);
+    monomials->add(0,one);
+}
+
+MonomialFactoryDegLex::~MonomialFactoryDegLex()
+{
+    delete monomials;
+}
+
+bool MonomialFactoryDegLex::supportsGetPos() const
+{
+    return true;
+}
+
+TAKE_OWN IMonomial* MonomialFactoryDegLex::create() const
+{
+    return (IMonomial*)(monomials->get(0));
+}
+
+TAKE_OWN IMonomial* MonomialFactoryDegLex::create(uint64_t pos) const
+{
+    IMonomial* result = (IMonomial*)(monomials->get(pos));
+
+    if(result == NULL) {
+        DegLexMonomial* elem = new DegLexMonomial(pos,indet,monomials);
+        monomials->add(pos,elem);
+        result = elem;
     }
+
+    return result;
 }
 
 } // namespace polynomial

@@ -35,7 +35,6 @@ template<typename T>
 void Polynomial<T>::push(TAKE_OWN Term<T>* term)
 {
     if(term->getCoef()==0) {
-        delete term->getMonomial();
         delete term;
         return;
     }
@@ -112,7 +111,8 @@ template<typename T>
 void Polynomial<T>::incrementAtIndet(uint index)
 {
     for(uint i=0;i<rep->size();i++) {
-        rep->at(i)->getMonomial()->extend(index,1);
+        IMonomial* m = rep->at(i)->getMonomial()->extend(index,1);
+        rep->at(i)->setMonomial(m);
     }
 }
 
