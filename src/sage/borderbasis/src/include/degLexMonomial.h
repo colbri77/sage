@@ -28,19 +28,20 @@ public:
 
     virtual void del() OVERRIDE;
 
-private:
-    uint* rep;
-    uint indet;
-    uint64_t pos;
-    uint degree;
-    FastFlexibleArray* monomBox;
-
+protected:
     friend class MonomialFactoryDegLex;
     friend class FastFlexibleArray;
 
     DegLexMonomial(uint64_t pos, uint indet, FastFlexibleArray* monomBox);
     DegLexMonomial(uint indet, FastFlexibleArray* monomBox);
     virtual ~DegLexMonomial();
+
+private:
+    uint* rep;
+    uint indet;
+    uint64_t pos;
+    uint degree;
+    FastFlexibleArray* monomBox;
 
     void recalcPos();
     void recalcDegree();

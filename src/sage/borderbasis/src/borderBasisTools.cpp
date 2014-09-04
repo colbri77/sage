@@ -428,18 +428,36 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         if(field) addAndReduce(in,lastOriginalPolynomial+1);
         else toSimpleBasis(in,false);
 
+	OwningVector<IPolynomial<T>*> ovTemp = OwningVector<IPolynomial<T>*>();
+
         // 5. remove elements that have a leading term outside the universe
         int limit = (field ? lastOriginalPolynomial : -1);
         for(int i=(int)in->size()-1;i>limit;i--) {
             if(!universe->contains(in->at(i)->at(0)->getMonomial()))
-               in->remove(i);
+               //in->remove(i);
+                ovTemp.push_back(in->lift(i));
         }
 
         // 6. If the OptLevel is high enough, we have to extend the comp. universe
         if(optimization!=NONE)
             universe->add(in,field ? lastOriginalPolynomial : 0);
 
-        // 7. If the size didn't change, its still the same basis and we're done.
+        // 7. check if polynomials in ovTemp are valid now
+        uint newPolCtr = 0;
+        do {
+            newPolCtr = 0;
+            for(uint i=0;i<ovTemp.size();i++) {
+                if(universe->contains(ovTemp.at(i)->at(0)->getMonomial())) {
+                    in->push_back(ovTemp.lift(i));
+                    newPolCtr++;
+                    i--;
+                }
+            }
+            universe->add(in,in->size()-newPolCtr-1);
+        } while(newPolCtr>0);
+        
+
+        // 8. If the size didn't change, its still the same basis and we're done.
         if(in->size()==lastOriginalPolynomial+1)
             break;
     }

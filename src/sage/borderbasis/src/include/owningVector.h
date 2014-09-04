@@ -74,6 +74,15 @@ class OwningVector : public vector<T>, public IOwningList<T>
             it += pos;
             vector<T>::erase(it);
         }
+
+        virtual T lift(uint pos)
+        {
+            T result = vector<T>::at(pos);
+            typename OwningVector<T>::iterator it = vector<T>::begin();
+            it += pos;
+            vector<T>::erase(it);
+            return result;
+        }
 };
 
 }
