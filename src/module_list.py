@@ -99,7 +99,7 @@ ext_modules = [
 
     Extension('sage.borderbasis.cppWrapper',
                sources = ['sage/borderbasis/cppWrapper.pyx',
-                          'sage/borderbasis/src/hash/xxhash.c',
+                          'sage/borderbasis/src/hash/xxhash.cpp',
                           'sage/borderbasis/src/borderBasisTools.cpp',
                           'sage/borderbasis/src/compUniverse.cpp',
                           'sage/borderbasis/src/degLexMonomial.cpp',
@@ -115,7 +115,8 @@ ext_modules = [
                           'sage/borderbasis/src/monomialIndex.cpp',
                           'sage/borderbasis/src/matrix.cpp',
                           'sage/borderbasis/src/matrixFactory_fn.cpp',
-                          'sage/borderbasis/src/fastFlexibleArray.cpp'],
+                          'sage/borderbasis/src/fastFlexibleArray.cpp',
+                          'sage/borderbasis/src/bmap128.cpp'],
                language='c++',
                libraries = ["ntl","stdc++","gmp","m4ri", "m4rie"],
                depends = [SAGE_INC + "/m4rie/m4rie.h", SAGE_INC + "/m4ri/m4ri.h"],

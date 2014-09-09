@@ -34,9 +34,11 @@ int IPolynomial<T>::compare(const IPolynomial* other) const
 }
 
 template<typename T>
-uint64_t IPolynomial<T>::hash() const
+void IPolynomial<T>::hash(uint64_t* out) const
 {
-    void* state = XXH32_init(0xdeadbeef);
+    void* state[2];
+    state[0] = XXH64_init(0xdeadbeef);
+    state[1] = XXH64_init(0xbaadf00d);
     uint repSize = size();
     T factor = 0;
     uint64_t monomial = 0;
@@ -53,18 +55,19 @@ uint64_t IPolynomial<T>::hash() const
             for(uint k=0;k<indet;k++) {
                 tmpBuf2[k] = (char)cm->at(k);
             }
-            void* state2 = XXH32_init(0xdeadbeef);
-            XXH32_update(state2,tmpBuf2,getIndet());
-            monomial = XXH32_digest(state2);
+            void* stateTmp = XXH64_init(0xdeadbeef);
+            XXH64_update(stateTmp,tmpBuf2,getIndet());
+            monomial = XXH32_digest(stateTmp);
             delete tmpBuf2;
         }
         *((T*)tmpBuf) = factor;
         *((uint64_t*)(tmpBuf+sizeof(T)+1)) = monomial;
         tmpBuf[sizeof(T)] = '*';
         tmpBuf[sizeof(T)+9] = '*';
-        XXH32_update (state,tmpBuf,sizeof(T)+10);
+        XXH64_update (state[i%2],tmpBuf,sizeof(T)+10);
     }
-    return (uint64_t)XXH32_digest (state);
+    out[0] = (uint64_t)XXH64_digest(state[0]);
+    out[1] = (uint64_t)XXH64_digest(state[1]);
 }
 
 template<typename T>

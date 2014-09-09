@@ -31,7 +31,7 @@ class IPolynomial
 
         virtual int compare(const IPolynomial* other) const;
 
-        virtual uint64_t hash() const;
+        virtual void hash(uint64_t* out /*size 2*/) const;
         virtual void subtract(IPolynomial<T>* other,IField<T>* f);
 };
 

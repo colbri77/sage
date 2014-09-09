@@ -9,6 +9,7 @@
 #include "compUniverse.h"
 #include "statistics.h"
 #include "field.h"
+#include "bmap128.h"
 
 namespace borderbasis {
 
@@ -16,7 +17,11 @@ enum OptLevel {
 	NONE,
 	ENHANCED,
 	OPTIMISTIC,
-	EXPERIMENTAL
+	EXPERIMENTAL,
+	MUTANT,
+	IMPROVED_MUTANT,
+	IMPROVED_MUTANT_LINEAR,
+	IMPROVED_MUTANT_OPTIMISTIC
 };
 
 template<typename T>
@@ -61,13 +66,38 @@ private:
     ICompUniverse<T>* universe;
     bool getPosSupport;
 
+    class MutantState {
+    public:
+        MutantState(uint indet)
+            : P_mutant(new BMap128()),
+            G(new OwningVector<IPolynomial<T>*>()),
+            VHash(new BMap128()),
+            d_min(0),
+            d_max(0),
+            X_(new bool[indet]()) {}
+        ~MutantState(){
+            delete P_mutant;
+            delete G;
+            delete VHash;
+            delete X_;
+        }
+        BMap128* P_mutant;
+        OwningVector<IPolynomial<T>*>* G; // The position where the new Polynomials have been added
+        BMap128* VHash;
+        uint d_min;
+        uint d_max;
+        bool* X_;
+    };
+
     static uint processors;
 
     void toSimpleBasis(IOwningList<IPolynomial<T>*>* in,bool full);
     void extend(IOwningList<IPolynomial<T>*>* in,bool isBasis);
+    void extendMutant(IOwningList<IPolynomial<T>*>* in,bool isBasis,MutantState* mstate);
     void getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolynomial<T>* out);
-    bool checkOrderIdeal(const IPolynomial<T>* orderIdeal);
+    bool checkOrderIdeal(const IPolynomial<T>* orderIdeal,MutantState* mstate);
     void addAndReduce(IOwningList<IPolynomial<T>*>* in,int pos);
+    void reduceFinal(IOwningList<IPolynomial<T>*>* in);
 };
 
 }

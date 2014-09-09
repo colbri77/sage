@@ -16,6 +16,7 @@ public:
     virtual void pop() = 0;
     virtual T pop_lift() = 0;
     virtual void clear() = 0;
+    virtual void clear_keep() = 0;
     virtual void remove(uint pos) = 0;
     virtual T lift(uint pos) = 0;
     virtual void push_front(T val) = 0;

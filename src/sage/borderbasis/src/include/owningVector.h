@@ -42,6 +42,11 @@ class OwningVector : public vector<T>, public IOwningList<T>
             vector<T>::clear();
         }
 
+        virtual void clear_keep()
+        {
+            vector<T>::clear();
+        }
+
         virtual void push_front(T val)
         {
             vector<T>::insert(vector<T>::begin(),val);

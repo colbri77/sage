@@ -35,6 +35,7 @@ public:
 
     virtual void del();
     virtual int compare(const IMonomial* other) const;
+    virtual uint getLV() const;
 
 protected:
     virtual ~IMonomial();

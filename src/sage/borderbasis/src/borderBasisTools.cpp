@@ -5,9 +5,9 @@
 #include <iostream>
 #include <stack>
 #include <stdlib.h>
-#include <map>
 #include <omp.h>
 #include <cstring>
+#include "include/bmap128.h"
 #include "include/owningVector.h"
 #include "include/degLexMonomial.h"
 #include "include/field.h"
@@ -40,6 +40,10 @@ getPosSupport(monFactory->supportsGetPos())
         case ENHANCED: universe = new SpecificCompUniverse<T>(indet); break;
         case OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
         case EXPERIMENTAL: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
+        case MUTANT: universe = new SpecificCompUniverse<T>(indet); break;
+        case IMPROVED_MUTANT: universe = new SpecificCompUniverse<T>(indet); break;
+        case IMPROVED_MUTANT_LINEAR: universe = new LinearCompUniverse<T>(indet); break;
+        case IMPROVED_MUTANT_OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
         default: ASSERT_NOT_REACHED;
         }
     } else {
@@ -73,6 +77,10 @@ getPosSupport(monFactory->supportsGetPos())
         case ENHANCED: universe = new SpecificCompUniverse<T>(indet); break;
         case OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
         case EXPERIMENTAL: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
+        case MUTANT: universe = new SpecificCompUniverse<T>(indet); break;
+        case IMPROVED_MUTANT: universe = new SpecificCompUniverse<T>(indet); break;
+        case IMPROVED_MUTANT_LINEAR: universe = new LinearCompUniverse<T>(indet); break;
+        case IMPROVED_MUTANT_OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
         default: ASSERT_NOT_REACHED;
         }
     } else {
@@ -111,7 +119,7 @@ void BorderBasisTools<T>::toSimpleBasis(IOwningList<IPolynomial<T>*>* in,bool fu
 
     uint columns = index->getColumns();
     uint rows = in->size();
-    
+
     IMatrix<T>* matrix = matrixFactory->create(rows,columns);
 
     statistics->logMatrix(rows,columns);
@@ -149,7 +157,6 @@ void BorderBasisTools<T>::toSimpleBasis(IOwningList<IPolynomial<T>*>* in,bool fu
     {
         #pragma omp for ordered schedule(dynamic,bs) nowait
         for(r=0;r<rows;r++) {
-            uint curPos = 0;
             IPolynomial<T>* p = polFactory->create(indet);
             for(uint c=r;c<columns;c++) {
                 if(matrix->get(r,c)!=0) {
@@ -193,18 +200,30 @@ void BorderBasisTools<T>::calculateBasis(const IOwningList<IPolynomial<T>*>* in,
     // 1. Initialize the computational universe
     universe->add(&tmpVec);
 
+    // 2. Initialize state for Mutant algorithms
+    MutantState* mstate = new MutantState(indet);
+
     for(bool firstRun=true; true; firstRun=false) {
-        // 2. Extend the polynomial set according to the computational universe
-        extend(&tmpVec,!firstRun);
+        // 3. Extend the polynomial set according to the computational universe
+        if(optimization==MUTANT || optimization==IMPROVED_MUTANT ||
+           optimization==IMPROVED_MUTANT_LINEAR || optimization==IMPROVED_MUTANT_OPTIMISTIC) {
+            extendMutant(&tmpVec,!firstRun,mstate);
+        } else {
+            extend(&tmpVec,!firstRun);
+        }
 
-        // 3. The result is already in row echelon form
-        // 4. Read the candidate order ideal from the set
-        getOrderIdeal(&tmpVec,orderIdeal);
+        // 4. The result is already in row echelon form
+        // 5. Read the candidate order ideal from the set
+        getOrderIdeal(&tmpVec, orderIdeal);
 
-        // 5. Check and possibly extend the computational universe and (maybe) repeat
-        if(checkOrderIdeal(orderIdeal))
+        // 6. Check and possibly extend the computational universe and (maybe) repeat
+        if(checkOrderIdeal(orderIdeal,mstate))
             break;
     }
+
+    delete mstate;
+
+    reduceFinal(&tmpVec);
 
     // remove polynomials that are not border bases
     while(tmpVec.size()>0) {
@@ -227,7 +246,7 @@ void BorderBasisTools<T>::calculateBasis(const IOwningList<IPolynomial<T>*>* in,
 }
 
 template<typename T>
-bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal)
+bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,MutantState* mstate)
 {
     bool result = true;
 
@@ -249,6 +268,67 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal)
                 result = false;
             }
             delete pNew;
+        }
+    }
+    else if(optimization==MUTANT) {
+        for(uint i=0;i<indet && result;i++) {
+            IPolynomial<T>* pNew = orderIdeal->copy();
+            pNew->incrementAtIndet(i);
+            if(!universe->contains(pNew)) {
+                universe->addBorder();
+                mstate->d_min = universe->getMaxDegree();
+                mstate->d_max = mstate->d_min;
+                result = false;
+            }
+            delete pNew;
+        }
+    }
+    else if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR) {
+        bool X_empty = true;
+        for(uint i=0;i<indet;i++) {
+            if(mstate->X_[i]) {
+                X_empty = false;
+                result = false;
+            }
+        }
+        for(uint i=0;i<indet && result;i++) {
+            IPolynomial<T>* pNew = orderIdeal->copy();
+            pNew->incrementAtIndet(i);
+            if(!universe->contains(pNew)) {
+                universe->addBorder();
+                mstate->d_min = universe->getMaxDegree();
+                mstate->d_max = mstate->d_min;
+                result = false;
+            }
+            delete pNew;
+        }
+    }
+    else if(optimization==IMPROVED_MUTANT_OPTIMISTIC) {
+        bool X_empty = true;
+        for(uint i=0;i<indet;i++) {
+            if(mstate->X_[i]) {
+                X_empty = false;
+                result = false;
+            }
+        }
+        if(result) {
+            OwningVector<IPolynomial<T>*>* ovTemp = new OwningVector<IPolynomial<T>*>();
+            for(uint i=0;i<indet;i++) {
+                IPolynomial<T>* pNew = orderIdeal->copy();
+                pNew->incrementAtIndet(i);
+                if(!universe->contains(pNew)) {
+                    ovTemp->push_back(pNew);
+                } else {
+                    delete pNew;
+                }
+            }
+            if(ovTemp->size()>0) {
+                universe->add(ovTemp);
+                mstate->d_min = universe->getMaxDegree();
+                mstate->d_max = mstate->d_min;
+                result = false;
+            }
+            delete ovTemp;
         }
     }
     else if(optimization==OPTIMISTIC || optimization==EXPERIMENTAL) {
@@ -276,20 +356,32 @@ template<typename T>
 void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,int pos)
 {
     uint64_t cmpCounter = 0;
+    uint i = 0;
+    IPolynomial<T>* f = NULL;
 
-    uint8_t* checkList = new uint8_t[in->size()/8+1]();
+    //reduction1:
+        uint H = pos;
+        uint q = 0;
 
-    for(;pos<in->size();pos++) {
-        IPolynomial<T>* p = in->at(pos);
-        uint64_t coef = p->at(0)->getCoef();
+    reduction2:
+        if(H == in->size()) {
+            if(cmpCounter>statistics->max_comparisons_in_reduction)
+                statistics->max_comparisons_in_reduction = cmpCounter;
+            return;
+        }
 
-        // reduce the polynomials leading terms coefficient to zero
+    //reduction3:
+        f = in->at(H);  // not really removed here, just do that if necessary later
+        H++;
+        i = 1;
+        uint64_t coef = f->at(0)->getCoef();
+        // reduce the polynomials leading terms coefficient to one
         if(coef!=1) {
-            for(uint i=0;i<p->size();i++) {
-                Term<T>* term = p->at(i);
+            for(uint i=0;i<f->size();i++) {
+                Term<T>* term = f->at(i);
                 uint64_t newCoef = field->divide(term->getCoef(),coef);
                 if(newCoef==0) {
-                    p->remove(i);
+                    f->remove(i);
                     i--;
                 } else {
                     term->setCoef(newCoef);
@@ -297,70 +389,63 @@ void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,int pos)
             }
         }
 
-        memset(checkList,0,in->size()/8+1);
-        uint leadPos = 0;
+    reduction4:
+        if(f->isZero() || i>pos+q)
+            goto reduction7;
 
-        // we prevent running through aleady checked bigger polynomials by only remembering the lower ones.
-        for(int checkPos=0;checkPos<pos;checkPos++) {
-            if((checkList[checkPos/8]>>(checkPos%8))&1) // already checked, its too big
-                continue;
-            IMonomial* leading = p->at(leadPos)->getMonomial();
-
+    //reduction5:
+        if(f->at(0)->getMonomial()->compare(in->at(i-1)->at(0)->getMonomial())==0) {
             cmpCounter++;
-            int cmp = in->at(checkPos)->at(0)->getMonomial()->compare(leading);
-            if(cmp>0) {
-                // not a hit and too big for future monomials => ignore in the future
-                checkList[checkPos/8] |= (1>>(checkPos%8));
-                leadPos = 0;
-            }
-            else if(cmp==0) {
-                // a hit! Reduce the current polynomial and start from the beginning.
-                checkList[checkPos/8] |= (1>>(checkPos%8));
+            f->subtract(in->at(i-1),field);
+            i = 1;
+            goto reduction4;
+        }
 
-                p->subtract(in->at(checkPos),field);
-                if(p->isZero())
-                    break;
-                leadPos = 0;
-                checkPos = -1;
-            }
-            else {
-                // the new polynomial is too big => forward the leading term one step
-                leadPos++;
-                if(leadPos==p->size()) {
-                    checkList[checkPos/8] |= (1>>(checkPos%8));
-                    leadPos = 0;
-                } else {
-                    checkPos--;
+    //reduction6:
+        i++;
+        goto reduction4;
+
+    reduction7:
+        if(f->isZero()) {
+            H--;
+            in->remove(H);
+        } else {
+            q++;
+        }
+        goto reduction2;
+}
+
+template<typename T>
+void BorderBasisTools<T>::reduceFinal(IOwningList<IPolynomial<T>*>* in)
+{
+    // if we don't have a field we use matrices, and they already transform into row echelon form.
+    if(!field)
+        return;
+
+    bool* processed = new bool[in->size()]();
+
+    for(uint procCtr=0;procCtr<in->size();procCtr++) {
+        uint posMin = 0;
+        for(uint i=0;i<in->size();i++) {
+            if(!processed[i] &&
+               in->at(i)->at(0)->getMonomial()->compare(in->at(posMin)->at(0)->getMonomial())<0)
+                posMin = i;
+        }
+        processed[posMin] = true;
+        IMonomial* mini = in->at(posMin)->at(0)->getMonomial();
+
+        for(uint i=0;i<in->size();i++) {
+            if(!processed[i]) {
+                for(uint k=0;k<in->at(i)->size();k++) {
+                    if(in->at(i)->at(k)->getMonomial()->compare(mini)==0) {
+                        in->at(i)->subtract(in->at(posMin),field);
+                    }
                 }
-            }
-        }
-
-        // check if the polynomial had been reduced to 0
-        if(p->isZero()) {
-            in->remove(pos);
-            pos--;
-            continue;
-        }
-
-        // if the polynomial is not zero, we reduce all the other polynomials to make future calls faster
-        IMonomial* leading = p->at(0)->getMonomial();
-        for(uint checkPos=0;checkPos<pos;checkPos++) {
-            IPolynomial<T>* curPol = in->at(checkPos);
-            int cmp = 1;
-            for(uint i=0,end_i=curPol->size();cmp>0 && i<end_i;i++) {
-                cmpCounter++;
-                cmp = curPol->at(i)->getMonomial()->compare(leading);
-            }
-            if(cmp==0) {
-                curPol->subtract(p,field);
             }
         }
     }
 
-    delete checkList;
-
-    if(cmpCounter>statistics->max_comparisons_in_reduction)
-        statistics->max_comparisons_in_reduction = cmpCounter;
+    delete processed;
 }
 
 template<typename T>
@@ -371,14 +456,13 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         if(field) addAndReduce(in,0);
         else toSimpleBasis(in,true);
     }
- 
+
     // 2. We create a map to store hashes of all processed polynomials so that we can ignore
     //    them when they come back up later. If the value in the list is false, then they are
     //    in the "to do"-list, but have not been processed yet - they don't need to be added.
     //    I the value is true, they have been handled completely and can be ignored.
-    map<uint64_t,bool> polMap = map<uint64_t,bool>();
-    uint64_t hash = 0;
-    map<uint64_t,bool>::iterator it;
+    BMap128 polMap = BMap128();
+    uint64_t hash[2] = {0,0};
 
     while(true) {
         uint end = in->size();
@@ -395,23 +479,21 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
             }
 
             // 3.2 Check if this polynomial has already been handled completely
-            hash = currentPol->hash();
-            it=polMap.find(hash);
-            if(it!=polMap.end() && it->second) {
+            currentPol->hash(hash);
+            if(polMap.contains(hash) && polMap.get(hash)) {
                 continue; // 3.2.1 If this has already been handled, continue with the next polynomial
             } else {
-                polMap[hash] = true;
+                polMap.set(hash,true);
             }
 
             // 3.3 Generate "offsprings"
             for(uint k=0;k<indet;k++) {
                 IPolynomial<T>* p = currentPol->copy();
                 p->incrementAtIndet(k);
-                hash = p->hash();
-                it = polMap.find(hash);
+                p->hash(hash);
                 // 3.5 If offspring has never been seen before, add it to the list
-                if(it==polMap.end()) { 
-                    polMap[hash] = false;
+                if(!polMap.contains(hash)) {
+                    polMap.set(hash,false);
                     in->push_back(p);
                 } else {
                     delete p;
@@ -428,7 +510,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         if(field) addAndReduce(in,lastOriginalPolynomial+1);
         else toSimpleBasis(in,false);
 
-	OwningVector<IPolynomial<T>*> ovTemp = OwningVector<IPolynomial<T>*>();
+        OwningVector<IPolynomial<T>*> ovTemp = OwningVector<IPolynomial<T>*>();
 
         // 5. remove elements that have a leading term outside the universe
         int limit = (field ? lastOriginalPolynomial : -1);
@@ -455,12 +537,200 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
             }
             universe->add(in,in->size()-newPolCtr-1);
         } while(newPolCtr>0);
-        
+
 
         // 8. If the size didn't change, its still the same basis and we're done.
         if(in->size()==lastOriginalPolynomial+1)
             break;
     }
+}
+
+template<typename T>
+void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isBasis,MutantState* mstate)
+{
+    uint H = 0;
+    uint64_t hash[2] = {0,0};
+    uint d_elim = 0;
+    stack<IPolynomial<T>*> M = stack<IPolynomial<T>*>();
+    IPolynomial<T>* currentPol = NULL;
+    OwningVector<IPolynomial<T>*> W_ = OwningVector<IPolynomial<T>*>();
+    OwningVector<IPolynomial<T>*> W = OwningVector<IPolynomial<T>*>();
+
+    // never called before, execute step 1
+    if(!isBasis) {
+        if(field) addAndReduce(in,0);
+        else toSimpleBasis(in,true);
+
+        mstate->G->clear();
+        mstate->P_mutant->clear();
+        mstate->d_max = 0;
+        mstate->d_min = 0x7fffffff;
+        for(uint i=0;i<in->size();i++) {
+            in->at(i)->hash(hash);
+            mstate->VHash->set(hash,true);
+            mstate->G->push_back(in->at(i)->copy());
+            uint degree = in->at(i)->at(0)->getMonomial()->getDegree();
+            if(mstate->d_max < degree)
+                mstate->d_max = degree;
+            if(mstate->d_min > degree)
+                mstate->d_min = degree;
+        }
+        for(uint i=0;i<indet;i++)
+            mstate->X_[i] = false;
+    }
+
+    mutantS2:
+        if(optimization==MUTANT) {
+            H = mstate->G->size();
+            for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
+                currentPol = mstate->G->at(i);
+                currentPol->hash(hash);
+                if(currentPol->at(0)->getMonomial()->getDegree()==mstate->d_min &&
+                   !mstate->P_mutant->contains(hash)) {
+
+                    mstate->P_mutant->set(hash,true);
+                    d_elim = mstate->d_min+1;
+
+                    for(uint k=0;k<indet;k++) {
+                        IPolynomial<T>* p = currentPol->copy();
+                        p->incrementAtIndet(k);
+                        mstate->G->push_back(p);
+                    }
+                }
+            }
+        }
+        else if(optimization==IMPROVED_MUTANT) {
+            //mutantS2a:
+            int xl = -1;
+            for(int i=indet-1;i>=0;i--) {
+                if(mstate->X_[i]) {
+                    mstate->X_[i] = false;
+                    xl = i;
+                    break;
+                }
+            }
+            if(xl==-1) {
+                for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
+                    currentPol = mstate->G->at(i);
+                    if(currentPol->at(0)->getMonomial()->getDegree()==mstate->d_min) {
+                        mstate->X_[currentPol->at(0)->getMonomial()->getLV()] = true;
+                    }
+                }
+                d_elim = mstate->d_min + 1;
+                for(int i=indet-1;i>=0;i--) {
+                    if(mstate->X_[i]) {
+                        mstate->X_[i] = false;
+                        xl = i;
+                        break;
+                    }
+                }
+            }
+
+            //mutantS2b:
+            H = mstate->G->size();
+            for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
+                currentPol = mstate->G->at(i);
+                currentPol->hash(hash);
+                IMonomial* monomial = currentPol->at(0)->getMonomial();
+                if(monomial->getDegree()==mstate->d_min &&
+                   monomial->getLV()==xl &&
+                   !mstate->P_mutant->contains(hash)) {
+
+                    mstate->P_mutant->set(hash,true);
+                    d_elim = mstate->d_min+1;
+
+                    for(uint k=0;k<indet;k++) {
+                        IPolynomial<T>* p = currentPol->copy();
+                        p->incrementAtIndet(k);
+                        mstate->G->push_back(p);
+                    }
+                }
+            }
+        }
+
+    mutantS3:
+        if(field) addAndReduce(in,H);
+        else toSimpleBasis(in,false);
+
+    //mutantS4:
+        for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
+            if(mstate->G->at(i)->at(0)->getMonomial()->getDegree()<d_elim)
+                M.push(mstate->G->at(i));
+        }
+
+    //mutantS5:
+    //mutantS5_:
+        H = mstate->G->size();
+        bool isEmpty = true;
+        uint d_elim_new = 0x7fffffff;
+        while(M.size()>0) {
+            currentPol = M.top();
+            M.pop();
+            currentPol->hash(hash);
+            if(!mstate->P_mutant->contains(hash)) {
+                isEmpty = false;
+                if(currentPol->at(0)->getMonomial()->getDegree()<d_elim_new)
+                    d_elim_new = currentPol->at(0)->getMonomial()->getDegree();
+                mstate->P_mutant->set(hash,true);
+                for(uint k=0;k<indet;k++) {
+                    IPolynomial<T>* p = currentPol->copy();
+                    p->incrementAtIndet(k);
+                    mstate->G->push_back(p);
+                }
+            }
+        }
+        if(!isEmpty) {
+            d_elim = d_elim_new + 1;
+            goto mutantS3;
+        }
+
+    //mutantS6:
+        if(d_elim <= mstate->d_min) {
+            d_elim++;
+            goto mutantS3;
+        }
+
+    //mutantS7:
+        W_.clear_keep();
+        for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
+            mstate->G->at(i)->hash(hash);
+            if(!mstate->VHash->contains(hash)) {
+                W_.push_back(mstate->G->at(i));
+            }
+        }
+
+    mutantS8:
+        W.clear_keep();
+        for(uint i=0;i<W_.size();i++) {
+            if(universe->contains(W_[i]->at(0)->getMonomial())) {
+                W.push_back(W_[i]);
+                W_.lift(i);
+                i--;
+            }
+        }
+
+    //mutantS9:
+        if(W.size()>0) {
+            universe->add(&W);
+            //mutantS10:
+            while(W.size()>0) {
+                IPolynomial<T>* p = W.pop_lift();
+                in->push_back(p->copy());
+                p->hash(hash);
+                mstate->VHash->set(hash,true);
+            }
+            goto mutantS8;  // G and V don't change, so we can skip S7
+        }
+
+    //mutantS11:
+        if(mstate->d_min<mstate->d_max) {
+            mstate->d_min++;
+            goto mutantS2;
+        }
+
+    //mutantS12:
+        W.clear_keep();
+        W_.clear_keep();
 }
 
 template<typename T>

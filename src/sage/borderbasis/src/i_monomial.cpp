@@ -29,5 +29,15 @@ void IMonomial::del()
     delete this;
 }
 
+uint IMonomial::getLV() const
+{
+    for(uint i=0,i_end=getIndet();i<i_end;i++) {
+        if(at(i)>0)
+            return i;
+    }
+    ASSERT_NOT_REACHED;
+    return 0;
+}
+
 
 } // namespace polynomial

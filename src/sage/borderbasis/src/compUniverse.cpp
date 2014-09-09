@@ -151,6 +151,7 @@ SpecificCompUniverse<T>::SpecificCompUniverse(uint indet)
 U(new uint8_t[1]),
 uLen(0),
 uBlocks(0),
+maxDegree(0),
 lastUBorderCandidates(new vector<IMonomial*>())
 {
 
@@ -172,6 +173,7 @@ void SpecificCompUniverse<T>::clear()
     U = new uint8_t[1];
     uLen = 0;
     uBlocks = 0;
+    maxDegree = 0;
     lastUBorderCandidates->clear();
 }
 
@@ -184,8 +186,7 @@ void SpecificCompUniverse<T>::extend(uint64_t limitDegree)
 template<typename T>
 uint SpecificCompUniverse<T>::getMaxDegree() const
 {
-    NOT_IMPLEMENTED;
-    return 0;
+    return maxDegree;
 }
 
 template<typename T>
@@ -223,8 +224,10 @@ void SpecificCompUniverse<T>::addBorder()
         for(uint i=0;i<ICompUniverse<T>::indet;i++) {
             IMonomial* tNew = t->copy();
             tNew = tNew->extend(i,1);
-            if(tNew->getPos()>maxPos)
+            if(tNew->getPos()>maxPos) {
                 maxPos = tNew->getPos();
+                maxDegree = tNew->getDegree();
+            }
             _stack.push(tNew);
         }
         t->del();
@@ -261,8 +264,11 @@ void SpecificCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint s
         for(uint iMonomial=0,ts2=p->size();iMonomial<ts2;iMonomial++) {
             IMonomial* t = p->at(iMonomial)->getMonomial();
             uint64_t pos = t->getPos();
-            if(pos>maxPos)
+            if(pos>maxPos) {
                 maxPos = pos;
+                if(maxDegree < t->getDegree())
+                    maxDegree = t->getDegree();
+            }
             _stack.push(t->copy());
         }
     }
@@ -292,6 +298,14 @@ void SpecificCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint s
 
         t->del();
     }
+}
+
+template<typename T>
+void SpecificCompUniverse<T>::add(IMonomial* monomial)
+{
+    if(monomial->getDegree()>maxDegree)
+        maxDegree = monomial->getDegree();
+    add(monomial->getPos());
 }
 
 template<typename T>
@@ -340,8 +354,11 @@ void SpecificCompUniverseNoBorderLog<T>::add(IOwningList<IPolynomial<T>*>* addit
         for(uint iMonomial=0,ts2=p->size();iMonomial<ts2;iMonomial++) {
             t = p->at(iMonomial)->getMonomial();
             uint64_t pos = t->getPos();
-            if(pos>maxPos)
+            if(pos>maxPos) {
                 maxPos = pos;
+                if(SpecificCompUniverse<T>::maxDegree < t->getDegree())
+                    SpecificCompUniverse<T>::maxDegree = t->getDegree();
+            }
             _stack.push(t->copy());
         }
     }

@@ -91,6 +91,10 @@ cdef extern from "src/include/borderBasisTools.h" namespace "borderbasis":
         ENHANCED
         OPTIMISTIC
         EXPERIMENTAL
+        MUTANT
+        IMPROVED_MUTANT
+        IMPROVED_MUTANT_LINEAR
+        IMPROVED_MUTANT_OPTIMISTIC
     cdef cppclass BorderBasisTools[T]:
         BorderBasisTools(IField[T]* field,
                          PolynomialFactory[T]* polFactory,
