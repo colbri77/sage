@@ -649,8 +649,8 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
         }
 
     mutantS3:
-        if(field) addAndReduce(in,H);
-        else toSimpleBasis(in,false);
+        if(field) addAndReduce(mstate->G,H);
+        else toSimpleBasis(mstate->G,false);
 
     //mutantS4:
         for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
