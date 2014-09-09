@@ -732,7 +732,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
         W.clear_keep();
         W_.clear_keep();
 
-	if(!field) toSimpleBasis(V,false);	// neccessary, since complete reduction is performed here.
+	if(!field) toSimpleBasis(in,false);	// neccessary, since complete reduction is performed here.
 }
 
 template<typename T>
