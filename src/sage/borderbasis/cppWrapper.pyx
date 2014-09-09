@@ -265,9 +265,7 @@ cdef class PyBorderBasisTools_uint64:
             polWrapper.thisptr = <IPolynomial[uint64_t]*>(pol)
             sagePol = self._from_native_pol(polWrapper,ring,variables)
             polList.append(sagePol)
-        #TODO: Next command is not working, PolSeq is incompatible to this kind of list
-        #result = PolynomialSequence(polList,ring)
-        result = polList
+        result = PolynomialSequence(polList,ring)
         return result
 
     cdef _from_native_pol(self,PyIPolynomial_uint64 nativePol,ring,variables):
@@ -286,7 +284,7 @@ cdef class PyBorderBasisTools_uint64:
 
             A sage polynomial equivalent to the C++ polynomial
         """
-        sagePol = var(variables[0])-var(variables[0])
+        sagePol = variables[0]-variables[0]
         termSize = nativePol.thisptr.size()
         for termPos in range(0,termSize):
             term = nativePol.thisptr.at(termPos)
@@ -300,9 +298,8 @@ cdef class PyBorderBasisTools_uint64:
             sageMon = 1
             for expPos in range(0,monomialSize):
                 exp = monomial.at(expPos)
-                sageMon = sageMon * (var(variables[expPos])**exp)
+                sageMon = sageMon * (variables[expPos]**exp)
             sagePol = sagePol + coef * sageMon
-        sagePol = polynomial(sagePol,ring)
         return sagePol
 
     cdef _get_dict(self,polynomial,variables):
