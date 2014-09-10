@@ -284,9 +284,10 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
         }
     }
     else if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR) {
+        bool x_empty = true;
         for(uint i=0;i<indet;i++) {
             if(mstate->X_[i]) {
-                result = false;
+                x_empty = false;
                 break;
             }
         }
@@ -294,40 +295,43 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
             IPolynomial<T>* pNew = orderIdeal->copy();
             pNew->incrementAtIndet(i);
             if(!universe->contains(pNew)) {
-                universe->addBorder();
-                mstate->d_min = universe->getMaxDegree();
-                mstate->d_max = mstate->d_min;
+                if(x_empty) {
+                    universe->addBorder();
+                    mstate->d_min = universe->getMaxDegree();
+                    mstate->d_max = mstate->d_min;
+                }
                 result = false;
             }
             delete pNew;
         }
     }
     else if(optimization==IMPROVED_MUTANT_OPTIMISTIC) {
+        bool x_empty = true;
         for(uint i=0;i<indet;i++) {
             if(mstate->X_[i]) {
-                result = false;
+                x_empty = false;
                 break;
             }
         }
-        if(result) {
-            OwningVector<IPolynomial<T>*>* ovTemp = new OwningVector<IPolynomial<T>*>();
-            for(uint i=0;i<indet;i++) {
-                IPolynomial<T>* pNew = orderIdeal->copy();
-                pNew->incrementAtIndet(i);
-                if(!universe->contains(pNew)) {
-                    ovTemp->push_back(pNew);
-                } else {
-                    delete pNew;
-                }
+        OwningVector<IPolynomial<T>*>* ovTemp = new OwningVector<IPolynomial<T>*>();
+        for(uint i=0;i<indet;i++) {
+            IPolynomial<T>* pNew = orderIdeal->copy();
+            pNew->incrementAtIndet(i);
+            if(!universe->contains(pNew)) {
+                ovTemp->push_back(pNew);
+            } else {
+                delete pNew;
             }
-            if(ovTemp->size()>0) {
+        }
+        if(ovTemp->size()>0) {
+            if(x_empty) {
                 universe->add(ovTemp);
                 mstate->d_min = universe->getMaxDegree();
                 mstate->d_max = mstate->d_min;
-                result = false;
             }
-            delete ovTemp;
+            result = false;
         }
+        delete ovTemp;
     }
     else if(optimization==OPTIMISTIC || optimization==EXPERIMENTAL) {
         OwningVector<IPolynomial<T>*>* ovTemp = new OwningVector<IPolynomial<T>*>();
