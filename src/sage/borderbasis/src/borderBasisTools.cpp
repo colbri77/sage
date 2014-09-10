@@ -603,7 +603,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 }
             }
         }
-        else if(optimization==IMPROVED_MUTANT) {
+        else if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR || optimization==IMPROVED_MUTANT_OPTIMISTIC) {
             //mutantS2a:
             int xl = -1;
             for(int i=indet-1;i>=0;i--) {
