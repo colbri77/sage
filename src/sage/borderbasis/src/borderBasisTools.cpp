@@ -757,19 +757,25 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
                 out->push(new Term<T>(1,t));
             tTemp = t;
             t = t->next();
+            if(tTemp == t)
+                break;
             if(!inUniverse)
                 tTemp->del();
         }
         tTemp = t;
         t = t->next();
+        if(tTemp == t)
+            break;
         tTemp->del();
     }
-    while(!universe->beyondLastElement(t)) {
+    while(!universe->beyondLastElement(t) && tTemp != t) {
         bool inUniverse = universe->contains(t);
         if(inUniverse)
             out->push(new Term<T>(1,t));
         tTemp = t;
         t = t->next();
+        if(tTemp == t)
+            break;
         if(!inUniverse)
             tTemp->del();
     }

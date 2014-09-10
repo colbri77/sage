@@ -1,18 +1,9 @@
 #include "include/degLexMonomial.h"
 
 #include <cstring>
-#include <stdio.h>
-#include <iostream>
+
 namespace polynomial {
-void printM(IMonomial* m) {
-if(m->getDegree()==0) {cout << "1"; return;}
-for(uint i=0;i<m->getIndet();i++) {
-    if(m->at(i)>1)
-        printf("%c^%d",'x'+i,m->at(i));
-    else if(m->at(i)>0)
-        printf("%c",'x'+i);
-}
-}
+
 //----- DegLexMonomial ------------------------------------
 
 DegLexMonomial::DegLexMonomial(uint64_t pos, uint indet,FastFlexibleArray* monomBox)
@@ -410,7 +401,7 @@ TAKE_OWN IMonomial* DegLexMonomialGF2::next() const
                 fitting = false;
         }
         if(result->getDegree()>indet)
-            ASSERT_NOT_REACHED;
+            return (DegLexMonomialGF2*)this; // no more elements
     }
     return (IMonomial*)result;
 }
@@ -624,7 +615,7 @@ TAKE_OWN IMonomial* DegLexMonomialNoOrderPosGF2::next() const
             }
         }
         if(i<0)
-            ASSERT_NOT_REACHED;
+            return (DegLexMonomialNoOrderPosGF2*)this; // no more elements
         result->rep[i]++;
         for(int k=(int)indet-1;k>i;k++,oneCtr--) {
             if(oneCtr>0)
