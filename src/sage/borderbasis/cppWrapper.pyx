@@ -31,11 +31,17 @@ cdef class PyMonomialFactory:
     r"""
     Parameter class, used to send C++ classes to python methods
     """
-    def __cinit__(self,use_positions,indet):
-        if use_positions:
-            self.thisptr = <IMonomialFactory*>(new MonomialFactoryDegLex(indet))
+    def __cinit__(self,use_positions,indet,gf2):
+        if(gf2):
+            if use_positions:
+                self.thisptr = <IMonomialFactory*>(new MonomialFactoryDegLexGF2(indet))
+            else:
+                self.thisptr = <IMonomialFactory*>(new MonomialFactoryNoOrderPosGF2(indet))
         else:
-            self.thisptr = <IMonomialFactory*>(new MonomialFactoryNoOrderPos(indet))
+            if use_positions:
+                self.thisptr = <IMonomialFactory*>(new MonomialFactoryDegLex(indet))
+            else:
+                self.thisptr = <IMonomialFactory*>(new MonomialFactoryNoOrderPos(indet))
     def __dealloc__(self):
         del self.thisptr
 
@@ -43,8 +49,11 @@ cdef class PyPolynomialFactory_uint64:
     r"""
     Parameter class, used to send C++ classes to python methods
     """
-    def __cinit__(self):
-        self.thisptr = new PolynomialFactory[uint64_t](POLTYPE_VECTOR)
+    def __cinit__(self,gf2):
+        if(gf2):
+            self.thisptr = new PolynomialFactory[uint64_t](POLTYPE_VECTOR_GF2)
+        else:
+            self.thisptr = new PolynomialFactory[uint64_t](POLTYPE_VECTOR)
     def __dealloc__(self):
         del self.thisptr
 
@@ -265,7 +274,7 @@ cdef class PyBorderBasisTools_uint64:
             polWrapper.thisptr = <IPolynomial[uint64_t]*>(pol)
             sagePol = self._from_native_pol(polWrapper,ring,variables)
             polList.append(sagePol)
-        result = PolynomialSequence(polList,ring)
+        result = polList
         return result
 
     cdef _from_native_pol(self,PyIPolynomial_uint64 nativePol,ring,variables):
@@ -284,7 +293,7 @@ cdef class PyBorderBasisTools_uint64:
 
             A sage polynomial equivalent to the C++ polynomial
         """
-        sagePol = variables[0]-variables[0]
+        sagePol = var(variables[0])-var(variables[0])
         termSize = nativePol.thisptr.size()
         for termPos in range(0,termSize):
             term = nativePol.thisptr.at(termPos)
@@ -298,8 +307,9 @@ cdef class PyBorderBasisTools_uint64:
             sageMon = 1
             for expPos in range(0,monomialSize):
                 exp = monomial.at(expPos)
-                sageMon = sageMon * (variables[expPos]**exp)
+                sageMon = sageMon * (var(variables[expPos])**exp)
             sagePol = sagePol + coef * sageMon
+        sagePol = polynomial(sagePol,ring)
         return sagePol
 
     cdef _get_dict(self,polynomial,variables):

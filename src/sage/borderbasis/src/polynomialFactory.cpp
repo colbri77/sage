@@ -20,8 +20,10 @@ PolynomialFactory<T>::~PolynomialFactory()
 template<typename T>
 TAKE_OWN IPolynomial<T>* PolynomialFactory<T>::create(uint indet) const
 {
-    // at the moment, there is only one type...
-    return new Polynomial<T>(indet);
+    if(type==POLTYPE_VECTOR)
+        return new Polynomial<T>(indet);
+    else
+        return new PolynomialGF2<T>(indet);
 }
 
 template class PolynomialFactory<uint64_t>;

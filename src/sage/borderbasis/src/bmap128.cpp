@@ -26,7 +26,7 @@ bool BMap128::contains(const uint64_t* index) const
 
 bool BMap128::get(const uint64_t* index) const
 {
-    const map<uint64_t,bool>& tmpMap =  _map.at(index[0]);
+    const map<uint64_t,bool>& tmpMap = _map.at(index[0]);
     return tmpMap.at(index[1]);
 }
 

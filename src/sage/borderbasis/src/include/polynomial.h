@@ -13,7 +13,7 @@ class Polynomial : public IPolynomial<T>
         Polynomial(uint indet);
         virtual ~Polynomial();
 
-        virtual TAKE_OWN Polynomial<T>* copy() const OVERRIDE;
+        virtual TAKE_OWN IPolynomial<T>* copy() const OVERRIDE;
 
         virtual void push(TAKE_OWN Term<T>* term) OVERRIDE;
         virtual void push_back(TAKE_OWN Term<T>* term) OVERRIDE;
@@ -29,9 +29,21 @@ class Polynomial : public IPolynomial<T>
 
         virtual void incrementAtIndet(uint index) OVERRIDE;
 
-    private:
+    protected:
         uint indet;
         OwningVector<Term<T>*>* rep;
+};
+
+template<typename T>
+class PolynomialGF2 : public Polynomial<T>
+{
+public:
+    PolynomialGF2(uint indet);
+    virtual ~PolynomialGF2();
+
+    virtual void incrementAtIndet(uint index) OVERRIDE;
+    virtual TAKE_OWN IPolynomial<T>* copy() const OVERRIDE;
+    virtual void push(TAKE_OWN Term<T>* term) OVERRIDE;
 };
 
 } // namespace polynomial

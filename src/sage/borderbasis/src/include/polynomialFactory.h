@@ -6,7 +6,8 @@
 namespace polynomial {
 
 enum PolType {
-	POLTYPE_VECTOR
+	POLTYPE_VECTOR,
+	POLTYPE_VECTOR_GF2
 };
 
 template<typename T>

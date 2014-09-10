@@ -284,11 +284,10 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
         }
     }
     else if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR) {
-        bool X_empty = true;
         for(uint i=0;i<indet;i++) {
             if(mstate->X_[i]) {
-                X_empty = false;
                 result = false;
+                break;
             }
         }
         for(uint i=0;i<indet && result;i++) {
@@ -304,11 +303,10 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
         }
     }
     else if(optimization==IMPROVED_MUTANT_OPTIMISTIC) {
-        bool X_empty = true;
         for(uint i=0;i<indet;i++) {
             if(mstate->X_[i]) {
-                X_empty = false;
                 result = false;
+                break;
             }
         }
         if(result) {
@@ -471,6 +469,8 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         // 3. For each polynomial in the original list:
         for(uint i=0;i<end;i++) {
             IPolynomial<T>* currentPol = in->at(i);
+            if(currentPol->isZero())
+                continue;
 
             // 3.1 on "experimental", we have to make sure this one is still in the computational universe
             if(optimization==EXPERIMENTAL) {
@@ -732,7 +732,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
         W.clear_keep();
         W_.clear_keep();
 
-	if(!field) toSimpleBasis(in,false);	// neccessary, since complete reduction is performed here.
+        if(!field) toSimpleBasis(in,false);
 }
 
 template<typename T>

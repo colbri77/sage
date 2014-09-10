@@ -42,6 +42,12 @@ cdef extern from "src/include/monomialFactory.h" namespace "polynomial":
     cdef cppclass MonomialFactoryDegLex:
         MonomialFactoryDegLex(unsigned int indet) except +
         IMonomial* create()
+    cdef cppclass MonomialFactoryNoOrderPosGF2:
+        MonomialFactoryNoOrderPosGF2(unsigned int indet) except +
+        IMonomial* create()
+    cdef cppclass MonomialFactoryDegLexGF2:
+        MonomialFactoryDegLexGF2(unsigned int indet) except +
+        IMonomial* create()
 
 cdef extern from "src/include/i_polynomial.h" namespace "polynomial":
     cdef cppclass IPolynomial_uint64:
@@ -67,6 +73,7 @@ cdef extern from "src/include/owningVector.h" namespace "base":
 cdef extern from "src/include/polynomialFactory.h" namespace "polynomial":
     cdef enum PolType:
         POLTYPE_VECTOR
+        POLTYPE_VECTOR_GF2
     cdef cppclass PolynomialFactory[T]:
         PolynomialFactory(PolType t) except +
         IPolynomial[T]* create(unsigned int indet) 

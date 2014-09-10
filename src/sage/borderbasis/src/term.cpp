@@ -68,5 +68,6 @@ int Term<T>::compare(const Term* other) const
 
 template class Term<uint64_t>;
 template class Term<int64_t>;
+template class Term<uint8_t>;
 
 } // namespace polynomial

@@ -73,7 +73,7 @@ tableColumns(0)
             }
         }
     }
-    
+
     // 4. Since we've countet the unique monomials, we know how big the reverse table must be
     cTableRev =  new cTableData[tableColumns];
 

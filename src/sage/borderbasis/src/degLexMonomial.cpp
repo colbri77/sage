@@ -1,9 +1,18 @@
 #include "include/degLexMonomial.h"
 
 #include <cstring>
-
+#include <stdio.h>
+#include <iostream>
 namespace polynomial {
-
+void printM(IMonomial* m) {
+if(m->getDegree()==0) {cout << "1"; return;}
+for(uint i=0;i<m->getIndet();i++) {
+    if(m->at(i)>1)
+        printf("%c^%d",'x'+i,m->at(i));
+    else if(m->at(i)>0)
+        printf("%c",'x'+i);
+}
+}
 //----- DegLexMonomial ------------------------------------
 
 DegLexMonomial::DegLexMonomial(uint64_t pos, uint indet,FastFlexibleArray* monomBox)
@@ -59,7 +68,7 @@ TAKE_OWN IMonomial* DegLexMonomial::set(uint index, uint value)
     DegLexMonomial* result = (DegLexMonomial*)(monomBox->get(newPos));
 
     if(result == NULL) {
-        result = new DegLexMonomial(indet,monomBox);
+        result = create(indet,monomBox);
 
         for(uint i=0;i<indet;i++)
             result->rep[i] = rep[i];
@@ -83,6 +92,11 @@ uint DegLexMonomial::getDegree() const
     return degree;
 }
 
+DegLexMonomial* DegLexMonomial::create(uint indet, FastFlexibleArray* monomBox) const
+{
+    return new DegLexMonomial(indet,monomBox);
+}
+
 TAKE_OWN IMonomial* DegLexMonomial::extend(uint index, int value)
 {
     ENSURE(index < indet, "DegLexMonomial::extend(index,value): index is out of bounds");
@@ -95,7 +109,7 @@ TAKE_OWN IMonomial* DegLexMonomial::extend(uint index, int value)
     rep[index] += value;
     degree += value;
     recalcPos();
-    
+
     uint64_t newPos = pos;
     pos = posBackup;
     degree = degBackup;
@@ -104,7 +118,7 @@ TAKE_OWN IMonomial* DegLexMonomial::extend(uint index, int value)
     DegLexMonomial* result = (DegLexMonomial*)(monomBox->get(newPos));
 
     if(result == NULL) {
-        result = new DegLexMonomial(indet,monomBox);
+        result = create(indet,monomBox);
 
         for(uint i=0;i<indet;i++)
             result->rep[i] = rep[i];
@@ -114,7 +128,7 @@ TAKE_OWN IMonomial* DegLexMonomial::extend(uint index, int value)
 
         monomBox->add(newPos,result);
     }
-    
+
     return (IMonomial*)result;
 }
 
@@ -128,7 +142,7 @@ TAKE_OWN IMonomial* DegLexMonomial::next() const
     DegLexMonomial* result = (DegLexMonomial*)(monomBox->get(pos+1));
 
     if(result == NULL) {
-        result = new DegLexMonomial(indet,monomBox);
+        result = create(indet,monomBox);
 
         for(uint i=0;i<indet;i++)
             result->rep[i] = rep[i];
@@ -339,6 +353,68 @@ void DegLexMonomial::del()
     // left blank on purpose
 }
 
+//----- DegLexMonomialGF2 -------------------------------------------
+DegLexMonomialGF2::DegLexMonomialGF2(uint64_t pos, uint indet, FastFlexibleArray* monomBox)
+: DegLexMonomial(pos,indet,monomBox)
+{
+
+}
+
+DegLexMonomialGF2::DegLexMonomialGF2(uint indet, FastFlexibleArray* monomBox)
+: DegLexMonomial(indet,monomBox)
+{
+
+}
+
+DegLexMonomialGF2::~DegLexMonomialGF2()
+{
+
+}
+
+DegLexMonomial* DegLexMonomialGF2::create(uint indet, FastFlexibleArray* monomBox) const
+{
+    return new DegLexMonomialGF2(indet,monomBox);
+}
+
+TAKE_OWN IMonomial* DegLexMonomialGF2::set(uint index, uint value)
+{
+    return DegLexMonomial::set(index,value>0 ? 1 : 0);
+}
+
+TAKE_OWN IMonomial* DegLexMonomialGF2::extend(uint index, int value)
+{
+    uint oldValue = DegLexMonomial::at(index);
+    if(oldValue==0 && value>0)
+        return DegLexMonomial::extend(index,1);
+    else if(oldValue>0 && value<0)
+        return DegLexMonomial::extend(index,-1);
+    return this;
+}
+
+TAKE_OWN IMonomial* DegLexMonomialGF2::next() const
+{
+    DegLexMonomialGF2* result = NULL;
+    bool fitting = false;
+
+    for(uint64_t curPos=pos+1;!fitting;curPos++) {
+        result = (DegLexMonomialGF2*)(monomBox->get(curPos));
+
+        if(result == NULL) {
+            result = new DegLexMonomialGF2(curPos,indet,monomBox);
+            monomBox->add(curPos,result);
+        }
+
+        fitting = true;
+        for(uint i=0;i<indet && fitting;i++) {
+            if(result->at(i)>1)
+                fitting = false;
+        }
+        if(result->getDegree()>indet)
+            ASSERT_NOT_REACHED;
+    }
+    return (IMonomial*)result;
+}
+
 //----- DegLexMonomialNoOrderPos ------------------------------------
 
 DegLexMonomialNoOrderPos::DegLexMonomialNoOrderPos(uint indet)
@@ -353,6 +429,11 @@ degree(0)
 DegLexMonomialNoOrderPos::~DegLexMonomialNoOrderPos()
 {
     delete rep;
+}
+
+DegLexMonomialNoOrderPos* DegLexMonomialNoOrderPos::create(uint indet) const
+{
+    return new DegLexMonomialNoOrderPos(indet);
 }
 
 const uint& DegLexMonomialNoOrderPos::at(uint const& index) const
@@ -390,7 +471,7 @@ TAKE_OWN IMonomial* DegLexMonomialNoOrderPos::extend(uint index, int value)
 
 TAKE_OWN IMonomial* DegLexMonomialNoOrderPos::copy() const
 {
-    DegLexMonomialNoOrderPos* result = new DegLexMonomialNoOrderPos(indet);
+    DegLexMonomialNoOrderPos* result = create(indet);
 
     for(uint i=0;i<indet;i++)
         result->rep[i] = rep[i];
@@ -489,6 +570,73 @@ int DegLexMonomialNoOrderPos::compare(const IMonomial* other) const
     }
 
     return 0;
+}
+
+//----- DegLexMonomialNoOrderPosGF2 -------------------------------------------
+
+DegLexMonomialNoOrderPosGF2::DegLexMonomialNoOrderPosGF2(uint indet)
+: DegLexMonomialNoOrderPos(indet)
+{
+
+}
+
+DegLexMonomialNoOrderPosGF2::~DegLexMonomialNoOrderPosGF2()
+{
+
+}
+
+DegLexMonomialNoOrderPos* DegLexMonomialNoOrderPosGF2::create(uint indet) const
+{
+    return new DegLexMonomialNoOrderPosGF2(indet);
+}
+
+
+TAKE_OWN IMonomial* DegLexMonomialNoOrderPosGF2::set(uint index, uint value)
+{
+    return DegLexMonomialNoOrderPos::set(index,value>0 ? 1 : 0);
+}
+
+TAKE_OWN IMonomial* DegLexMonomialNoOrderPosGF2::extend(uint index, int value)
+{
+    uint oldValue = DegLexMonomialNoOrderPos::at(index);
+    if(oldValue==0 && value>0)
+        return DegLexMonomialNoOrderPos::extend(index,1);
+    else if(oldValue>0 && value<0)
+        return DegLexMonomialNoOrderPos::extend(index,-1);
+    return this;
+}
+
+TAKE_OWN IMonomial* DegLexMonomialNoOrderPosGF2::next() const
+{
+    DegLexMonomialNoOrderPosGF2* result = (DegLexMonomialNoOrderPosGF2*)copy();
+
+    if(degree==0) {
+        result->rep[indet-1] = 1;
+    } else {
+        int oneCtr = 0;
+        int i = (int)indet-1;
+        for(;i>=0;i--) {
+            if(result->rep[i]==1) {
+                oneCtr++;
+            } else if(oneCtr>0) {
+                oneCtr--;
+                break;
+            }
+        }
+        if(i<0)
+            ASSERT_NOT_REACHED;
+        result->rep[i]++;
+        for(int k=(int)indet-1;k>i;k++,oneCtr--) {
+            if(oneCtr>0)
+                result->rep[k] = 1;
+            else
+                result->rep[k] = 0;
+        }
+    }
+
+    result->recalcDegree();
+
+    return result;
 }
 
 } // namespace polynomial

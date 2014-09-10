@@ -28,7 +28,7 @@ public:
     virtual TAKE_OWN IMonomial* create() const OVERRIDE;
     virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
 
-private:
+protected:
     uint indet;
 };
 
@@ -43,9 +43,31 @@ public:
     virtual TAKE_OWN IMonomial* create() const OVERRIDE;
     virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
 
-private:
+protected:
+    MonomialFactoryDegLex();
+
     FastFlexibleArray* monomials;
     uint indet;
+};
+
+class MonomialFactoryNoOrderPosGF2 : public MonomialFactoryNoOrderPos
+{
+public:
+    MonomialFactoryNoOrderPosGF2(uint indet);
+    virtual ~MonomialFactoryNoOrderPosGF2();
+
+    virtual TAKE_OWN IMonomial* create() const OVERRIDE;
+    virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
+};
+
+class MonomialFactoryDegLexGF2 : public MonomialFactoryDegLex
+{
+public:
+    MonomialFactoryDegLexGF2(uint indet);
+    virtual ~MonomialFactoryDegLexGF2();
+
+    virtual TAKE_OWN IMonomial* create() const OVERRIDE;
+    virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
 };
 
 } // namespace polynomial

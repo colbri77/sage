@@ -40,8 +40,15 @@ MonomialFactoryDegLex::MonomialFactoryDegLex(uint indet)
 monomials(new FastFlexibleArray()),
 indet(indet)
 {
-    DegLexMonomial* one = new DegLexMonomial(indet,monomials);
-    monomials->add(0,one);
+    create(0);
+}
+
+MonomialFactoryDegLex::MonomialFactoryDegLex()
+: IMonomialFactory(),
+monomials(new FastFlexibleArray()),
+indet(0)
+{
+
 }
 
 MonomialFactoryDegLex::~MonomialFactoryDegLex()
@@ -71,5 +78,61 @@ TAKE_OWN IMonomial* MonomialFactoryDegLex::create(uint64_t pos) const
 
     return result;
 }
+
+
+//-----MonomialFactoryNoOrderPosGF2-------------------------------
+
+MonomialFactoryNoOrderPosGF2::MonomialFactoryNoOrderPosGF2(uint indet)
+:MonomialFactoryNoOrderPos(indet)
+{
+
+}
+
+MonomialFactoryNoOrderPosGF2::~MonomialFactoryNoOrderPosGF2()
+{
+
+}
+
+TAKE_OWN IMonomial* MonomialFactoryNoOrderPosGF2::create() const
+{
+    return (IMonomial*)new DegLexMonomialNoOrderPosGF2(indet);
+}
+
+TAKE_OWN IMonomial* MonomialFactoryNoOrderPosGF2::create(uint64_t pos) const
+{
+    NOT_IMPLEMENTED;
+}
+
+//----------MonomialFactoryDegLexGF2---------------------------------
+
+MonomialFactoryDegLexGF2::MonomialFactoryDegLexGF2(uint indet)
+: MonomialFactoryDegLex()
+{
+    MonomialFactoryDegLex::indet = indet;
+    create(0);
+}
+
+MonomialFactoryDegLexGF2::~MonomialFactoryDegLexGF2()
+{
+}
+
+TAKE_OWN IMonomial* MonomialFactoryDegLexGF2::create() const
+{
+    return (IMonomial*)(monomials->get(0));
+}
+
+TAKE_OWN IMonomial* MonomialFactoryDegLexGF2::create(uint64_t pos) const
+{
+    IMonomial* result = (IMonomial*)(monomials->get(pos));
+
+    if(result == NULL) {
+        DegLexMonomialGF2* elem = new DegLexMonomialGF2(pos,indet,monomials);
+        monomials->add(pos,elem);
+        result = elem;
+    }
+    return result;
+}
+
+
 
 } // namespace polynomial
