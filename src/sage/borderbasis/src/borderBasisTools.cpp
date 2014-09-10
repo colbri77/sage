@@ -664,10 +664,48 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
 
     //mutantS5:
     //mutantS5_:
+        int necessary = (int)M.size();
+        if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR || optimization==IMPROVED_MUTANT_OPTIMISTIC) {
+            // caluclate the "necessary" amount of polynomials
+            uint k = 0x7fffffff;
+            uint Q = 0;
+            stack<IPolynomial<T>*> sTmp = stack<IPolynomial<T>*>();
+            
+            while(M.size()>0) {
+                currentPol = M.top();
+                M.pop();
+                sTmp.push(currentPol);
+            }
+            k = d_elim-1;
+            while(!sTmp.empty()) {
+                currentPol = sTmp.top();
+                M.push(currentPol);
+                sTmp.pop();
+            }
+
+            for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
+                uint degree = mstate->G->at(i)->at(0)->getMonomial()->getDegree();
+                if(degree <= k+1)
+                    Q++;
+            }
+
+            int64_t Sk = 0;
+            int64_t lastValue = 1;
+            for(uint l=1;l<=k+1;l++) {
+                lastValue *= (indet-l+1);
+                lastValue /= l;
+                Sk += lastValue;
+            }
+
+            int nc = (Sk-Q)/indet+1;
+            if(nc<0) necessary = 0;
+            else if(nc<necessary) necessary = nc;
+        }
+
         H = mstate->G->size();
         bool isEmpty = true;
         uint d_elim_new = 0x7fffffff;
-        while(M.size()>0) {
+        for(;necessary>0;necessary--) {
             currentPol = M.top();
             M.pop();
             currentPol->hash(hash);
@@ -683,6 +721,8 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 }
             }
         }
+        while(!M.empty())
+            M.pop();
         if(!isEmpty) {
             d_elim = d_elim_new + 1;
             goto mutantS3;
