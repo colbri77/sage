@@ -720,7 +720,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 isEmpty = false;
                 if(currentPol->at(0)->getMonomial()->getDegree()<d_elim_new)
                     d_elim_new = currentPol->at(0)->getMonomial()->getDegree();
-                if(necessary>=0) {
+                if(necessary>=0 && (optimization!=IMPROVED_MUTANT_EXPERIMENTAL || universe->contains(currentPol)) {
                     mstate->P_mutant->set(hash,true);
                     for(uint k=0;k<indet;k++) {
                         IPolynomial<T>* p = currentPol->copy();
