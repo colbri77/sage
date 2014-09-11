@@ -526,7 +526,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
                // we only care about minPolynomials if they are small enough to actually exclude something at all
                // this is on expense of the non-matrix solution, but it speeds up the matrix solution (which turned out
                // to be more efficient anyways).
-               singleVarIndex = in->at(i)->at(0)->getMonomial()->getSingleVarIndex();
+               /*singleVarIndex = in->at(i)->at(0)->getMonomial()->getSingleVarIndex();
                for(uint k=1,k_end=in->at(i)->size();k<k_end && singleVarIndex!=-1;k++) {
                    checkIndex = in->at(i)->at(k)->getMonomial()->getSingleVarIndex();
                    if(checkIndex!=singleVarIndex && checkIndex!=0) {
@@ -536,7 +536,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
                }
                if(singleVarIndex!=-1) { // we found a minimal polynomial!
                    universe->exclude(in->at(i)->at(0)->getMonomial());
-               }
+               }*/
                ovTemp.push_back(in->lift(i));
         }
 
