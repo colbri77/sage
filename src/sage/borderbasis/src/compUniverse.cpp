@@ -198,7 +198,7 @@ bool SpecificCompUniverse<T>::contains(uint64_t pos) const
 template<typename T>
 void SpecificCompUniverse<T>::add(uint64_t pos)
 {
-    if(pos>(uLen+1)) {
+    if(pos>=uLen) {
         // plus 2 is not specifically calculated - better safe than sorry.
         uint newUBlocks = (pos+9)/8+2;
         uint8_t* uNew = new uint8_t[newUBlocks]();
@@ -311,7 +311,7 @@ void SpecificCompUniverse<T>::add(IMonomial* monomial)
 template<typename T>
 bool SpecificCompUniverse<T>::beyondLastElement(IMonomial* monomial) const
 {
-    return monomial->getPos()>(uLen-1);
+    return monomial->getPos()>uLen;
 }
 
 template class SpecificCompUniverse<uint64_t>;

@@ -77,7 +77,7 @@ getPosSupport(monFactory->supportsGetPos())
         case ENHANCED: universe = new SpecificCompUniverse<T>(indet); break;
         case OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
         case EXPERIMENTAL: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
-        case MUTANT: universe = new SpecificCompUniverse<T>(indet); break;
+        case MUTANT: universe = new SpecificCompUniverse<T>(indet); break; 
         case IMPROVED_MUTANT: universe = new SpecificCompUniverse<T>(indet); break;
         case IMPROVED_MUTANT_LINEAR: universe = new LinearCompUniverse<T>(indet); break;
         case IMPROVED_MUTANT_OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
@@ -332,7 +332,7 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
             result = false;
         }
         delete ovTemp;
-    }
+    } 
     else if(optimization==OPTIMISTIC || optimization==EXPERIMENTAL) {
         OwningVector<IPolynomial<T>*>* ovTemp = new OwningVector<IPolynomial<T>*>();
         for(uint i=0;i<indet;i++) {
@@ -509,11 +509,11 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
                 end = in->size();
             }
         }
-
+        
         // 4. We now have the extended list, calculate a new basis of it.
         if(field) addAndReduce(in,lastOriginalPolynomial+1);
         else toSimpleBasis(in,false);
-
+        
         OwningVector<IPolynomial<T>*> ovTemp = OwningVector<IPolynomial<T>*>();
 
         // 5. remove elements that have a leading term outside the universe
@@ -655,7 +655,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
     mutantS3:
         if(field) addAndReduce(mstate->G,H);
         else toSimpleBasis(mstate->G,false);
-
+    
     //mutantS4:
         for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
             if(mstate->G->at(i)->at(0)->getMonomial()->getDegree()<d_elim)
@@ -698,26 +698,29 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             }
 
             int nc = (Sk-Q)/indet+1;
-            if(nc<0) necessary = 0;
+            if(nc<=0) necessary = 1;
             else if(nc<necessary) necessary = nc;
         }
 
         H = mstate->G->size();
         bool isEmpty = true;
         uint d_elim_new = 0x7fffffff;
-        for(;necessary>0;necessary--) {
+        for(;!M.empty();) {
             currentPol = M.top();
             M.pop();
             currentPol->hash(hash);
             if(!mstate->P_mutant->contains(hash)) {
+                necessary--;
                 isEmpty = false;
                 if(currentPol->at(0)->getMonomial()->getDegree()<d_elim_new)
                     d_elim_new = currentPol->at(0)->getMonomial()->getDegree();
-                mstate->P_mutant->set(hash,true);
-                for(uint k=0;k<indet;k++) {
-                    IPolynomial<T>* p = currentPol->copy();
-                    p->incrementAtIndet(k);
-                    mstate->G->push_back(p);
+                if(necessary>=0) {
+                    mstate->P_mutant->set(hash,true);
+                    for(uint k=0;k<indet;k++) {
+                        IPolynomial<T>* p = currentPol->copy();
+                        p->incrementAtIndet(k);
+                        mstate->G->push_back(p);
+                    }
                 }
             }
         }
@@ -734,7 +737,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             goto mutantS3;
         }
 
-    //mutantS7:
+    mutantS7:
         W_.clear_keep();
         for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
             mstate->G->at(i)->hash(hash);
@@ -743,7 +746,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             }
         }
 
-    mutantS8:
+    //mutantS8:
         W.clear_keep();
         for(uint i=0;i<W_.size();i++) {
             if(universe->contains(W_[i]->at(0)->getMonomial())) {
@@ -763,15 +766,13 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 p->hash(hash);
                 mstate->VHash->set(hash,true);
             }
-            goto mutantS8;  // G and V don't change, so we can skip S7
+            goto mutantS7; 
         }
-
     //mutantS11:
         if(mstate->d_min<mstate->d_max) {
             mstate->d_min++;
             goto mutantS2;
         }
-
     //mutantS12:
         W.clear_keep();
         W_.clear_keep();
