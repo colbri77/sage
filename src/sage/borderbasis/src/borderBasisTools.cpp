@@ -208,7 +208,8 @@ void BorderBasisTools<T>::calculateBasis(const IOwningList<IPolynomial<T>*>* in,
     for(bool firstRun=true; true; firstRun=false) {
         // 3. Extend the polynomial set according to the computational universe
         if(optimization==MUTANT || optimization==IMPROVED_MUTANT ||
-           optimization==IMPROVED_MUTANT_LINEAR || optimization==IMPROVED_MUTANT_OPTIMISTIC) {
+           optimization==IMPROVED_MUTANT_LINEAR || optimization==IMPROVED_MUTANT_OPTIMISTIC ||
+           optimization==IMPROVED_MUTANT_EXPERIMENTAL) {
             extendMutant(&tmpVec,!firstRun,mstate);
         } else {
             extend(&tmpVec,!firstRun);
