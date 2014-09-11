@@ -138,8 +138,6 @@ cdef class PyBorderBasisTools_uint64:
             self.optimizations = IMPROVED_MUTANT_LINEAR
         elif(optimizations == "improved_mutant_optimistic"):
             self.optimizations = IMPROVED_MUTANT_OPTIMISTIC
-        elif(optimizations == "improved_mutant_experimental"):
-            self.optimizations = IMPROVED_MUTANT_EXPERIMENTAL
         else:
             raise ValueError("optimization value \""+optimizations+"\" unknown")
 

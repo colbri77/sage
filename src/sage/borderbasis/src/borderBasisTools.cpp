@@ -44,7 +44,6 @@ getPosSupport(monFactory->supportsGetPos())
         case IMPROVED_MUTANT: universe = new SpecificCompUniverse<T>(indet); break;
         case IMPROVED_MUTANT_LINEAR: universe = new LinearCompUniverse<T>(indet); break;
         case IMPROVED_MUTANT_OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
-        case IMPROVED_MUTANT_EXPERIMENTAL: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
         default: ASSERT_NOT_REACHED;
         }
     } else {
@@ -82,7 +81,6 @@ getPosSupport(monFactory->supportsGetPos())
         case IMPROVED_MUTANT: universe = new SpecificCompUniverse<T>(indet); break;
         case IMPROVED_MUTANT_LINEAR: universe = new LinearCompUniverse<T>(indet); break;
         case IMPROVED_MUTANT_OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
-        case IMPROVED_MUTANT_EXPERIMENTAL: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
         default: ASSERT_NOT_REACHED;
         }
     } else {
@@ -208,8 +206,7 @@ void BorderBasisTools<T>::calculateBasis(const IOwningList<IPolynomial<T>*>* in,
     for(bool firstRun=true; true; firstRun=false) {
         // 3. Extend the polynomial set according to the computational universe
         if(optimization==MUTANT || optimization==IMPROVED_MUTANT ||
-           optimization==IMPROVED_MUTANT_LINEAR || optimization==IMPROVED_MUTANT_OPTIMISTIC ||
-           optimization==IMPROVED_MUTANT_EXPERIMENTAL) {
+           optimization==IMPROVED_MUTANT_LINEAR || optimization==IMPROVED_MUTANT_OPTIMISTIC) {
             extendMutant(&tmpVec,!firstRun,mstate);
         } else {
             extend(&tmpVec,!firstRun);
@@ -308,7 +305,7 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
             delete pNew;
         }
     }
-    else if(optimization==IMPROVED_MUTANT_OPTIMISTIC || optimization==IMPROVED_MUTANT_EXPERIMENTAL) {
+    else if(optimization==IMPROVED_MUTANT_OPTIMISTIC) {
         bool x_empty = true;
         for(uint i=0;i<indet;i++) {
             if(mstate->X_[i]) {
@@ -607,7 +604,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             }
         }
         else if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR || 
-                optimization==IMPROVED_MUTANT_OPTIMISTIC || optimization==IMPROVED_MUTANT_EXPERIMENTAL) {
+                optimization==IMPROVED_MUTANT_OPTIMISTIC) {
             //mutantS2a:
             int xl = -1;
             for(int i=indet-1;i>=0;i--) {
@@ -642,7 +639,6 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 IMonomial* monomial = currentPol->at(0)->getMonomial();
                 if(monomial->getDegree()==mstate->d_min &&
                    monomial->getLV()==xl &&
-                   (optimization != IMPROVED_MUTANT_EXPERIMENTAL || universe->contains(monomial)) &&
                    !mstate->P_mutant->contains(hash)) {
 
                     mstate->P_mutant->set(hash,true);
@@ -671,7 +667,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
     //mutantS5_:
         int necessary = (int)M.size();
         if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR || 
-           optimization==IMPROVED_MUTANT_OPTIMISTIC || optimization==IMPROVED_MUTANT_EXPERIMENTAL) {
+           optimization==IMPROVED_MUTANT_OPTIMISTIC) {
             // caluclate the "necessary" amount of polynomials
             uint k = 0x7fffffff;
             uint Q = 0;
@@ -720,7 +716,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 isEmpty = false;
                 if(currentPol->at(0)->getMonomial()->getDegree()<d_elim_new)
                     d_elim_new = currentPol->at(0)->getMonomial()->getDegree();
-                if(necessary>=0 && (optimization!=IMPROVED_MUTANT_EXPERIMENTAL || universe->contains(currentPol))) {
+                if(necessary>=0) {
                     mstate->P_mutant->set(hash,true);
                     for(uint k=0;k<indet;k++) {
                         IPolynomial<T>* p = currentPol->copy();
