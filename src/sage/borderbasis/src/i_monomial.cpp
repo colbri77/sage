@@ -39,5 +39,18 @@ uint IMonomial::getLV() const
     return 0;
 }
 
+int IMonomial::getSingleVarIndex() const
+{
+    int result = 0;
+    for(uint i=0;i<getIndet();i++) {
+        if(at(i)!=0) {
+            if(result!=-1)
+                return -1;
+            else
+                result = i;
+        }
+    }
+    return result;
+}
 
 } // namespace polynomial

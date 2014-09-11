@@ -465,6 +465,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
     //    I the value is true, they have been handled completely and can be ignored.
     BMap128 polMap = BMap128();
     uint64_t hash[2] = {0,0};
+    IPolynomial<T>* p = NULL;
 
     while(true) {
         uint end = in->size();
@@ -492,7 +493,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
 
             // 3.3 Generate "offsprings"
             for(uint k=0;k<indet;k++) {
-                IPolynomial<T>* p = currentPol->copy();
+                p = currentPol->copy();
                 p->incrementAtIndet(k);
                 p->hash(hash);
                 // 3.5 If offspring has never been seen before, add it to the list
@@ -518,10 +519,25 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
 
         // 5. remove elements that have a leading term outside the universe
         int limit = (field ? lastOriginalPolynomial : -1);
+        int singleVarIndex = 0;
+        int checkIndex = 0;
         for(int i=(int)in->size()-1;i>limit;i--) {
             if(!universe->contains(in->at(i)->at(0)->getMonomial()))
-               //in->remove(i);
-                ovTemp.push_back(in->lift(i));
+               // we only care about minPolynomials if they are small enough to actually exclude something at all
+               // this is on expense of the non-matrix solution, but it speeds up the matrix solution (which turned out
+               // to be more efficient anyways).
+               singleVarIndex = in->at(i)->at(0)->getMonomial()->getSingleVarIndex();
+               for(uint k=1,k_end=in->at(i)->size();k<k_end && singleVarIndex!=-1;k++) {
+                   checkIndex = in->at(i)->at(k)->getMonomial()->getSingleVarIndex();
+                   if(checkIndex!=singleVarIndex && checkIndex!=0) {
+                       singleVarIndex = -1;
+                       break;
+                   }
+               }
+               if(singleVarIndex!=-1) { // we found a minimal polynomial!
+                   universe->exclude(in->at(i)->at(0)->getMonomial());
+               }
+               ovTemp.push_back(in->lift(i));
         }
 
         // 6. If the OptLevel is high enough, we have to extend the comp. universe

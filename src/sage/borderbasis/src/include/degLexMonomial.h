@@ -25,6 +25,7 @@ public:
 
     virtual bool supportsGetPos() const OVERRIDE;
     virtual uint64_t getPos() const OVERRIDE;
+    virtual int getSingleVarIndex() const OVERRIDE;
 
     virtual void del() OVERRIDE;
 
@@ -42,11 +43,13 @@ protected:
     uint indet;
     uint64_t pos;
     uint degree;
+    int singleVarIndex;
     FastFlexibleArray* monomBox;
 
     void recalcPos();
     void recalcDegree();
     void initFromPos(uint64_t pos);
+    void recalcSingleVarIndex();
 };
 
 class DegLexMonomialGF2 : public DegLexMonomial

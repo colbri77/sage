@@ -12,9 +12,11 @@ rep(new uint[indet]()),
 indet(indet),
 pos(pos),
 degree(0),
+singleVarIndex(-1),
 monomBox(monomBox)
 {
     initFromPos(pos);
+    singleVarIndex = IMonomial::getSingleVarIndex();
 }
 
 DegLexMonomial::DegLexMonomial(uint indet,FastFlexibleArray* monomBox)
@@ -23,6 +25,7 @@ rep(new uint[indet]()),
 indet(indet),
 pos(0),
 degree(0),
+singleVarIndex(-1),
 monomBox(monomBox)
 {
 
@@ -66,6 +69,7 @@ TAKE_OWN IMonomial* DegLexMonomial::set(uint index, uint value)
         result->degree = degree + (value-rep[index]);
         result->rep[index] = value;
         result->pos = newPos;
+        result->recalcSingleVarIndex();
 
         monomBox->add(newPos,result);
     }
@@ -116,6 +120,7 @@ TAKE_OWN IMonomial* DegLexMonomial::extend(uint index, int value)
         result->rep[index] += value;
         result->degree = degree + value;
         result->pos = newPos;
+        result->recalcSingleVarIndex();
 
         monomBox->add(newPos,result);
     }
@@ -160,6 +165,7 @@ TAKE_OWN IMonomial* DegLexMonomial::next() const
 
         result->pos = pos+1;
         result->recalcDegree();
+        result->recalcSingleVarIndex();
 
         monomBox->add(pos+1,result);
     }
@@ -269,6 +275,16 @@ void DegLexMonomial::recalcDegree()
     degree = 0;
     for(uint i=0;i<indet;i++)
         degree += rep[i];
+}
+
+void DegLexMonomial::recalcSingleVarIndex()
+{
+    singleVarIndex = IMonomial::getSingleVarIndex();
+}
+
+int DegLexMonomial::getSingleVarIndex() const
+{
+    return singleVarIndex;
 }
 
 void DegLexMonomial::initFromPos(uint64_t pos)

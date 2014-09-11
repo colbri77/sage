@@ -11,7 +11,8 @@ namespace borderbasis {
 
 template<typename T>
 ICompUniverse<T>::ICompUniverse(uint indet)
-: indet(indet)
+: indet(indet),
+exclusions(new vector<IMonomial*>())
 {
 
 }
@@ -19,7 +20,26 @@ ICompUniverse<T>::ICompUniverse(uint indet)
 template<typename T>
 ICompUniverse<T>::~ICompUniverse()
 {
+    for(uint i=0;i<exclusions->size();i++) {
+        exclusions->at(i)->del();
+    }
+    delete exclusions;
+}
 
+template<typename T>
+bool ICompUniverse<T>::exclude(IMonomial* monomial)
+{
+    for(uint i=0;i<exclusions->size();i++) {
+        if(exclusions->at(i)->divides(monomial))
+            return false;
+        if(monomial->divides(exclusions->at(i))) {
+            exclusions->at(i)->del();
+            exclusions->at(i) = monomial;
+            return true;
+        }
+    }
+    exclusions->push_back(monomial->copy());
+    return true;
 }
 
 template<typename T>
@@ -35,7 +55,14 @@ bool ICompUniverse<T>::contains(IPolynomial<T>* pol) const
 template<typename T>
 bool ICompUniverse<T>::contains(IMonomial* monomial) const
 {
-    return contains(monomial->getPos());
+    bool result = contains(monomial->getPos());
+    if(result) {
+        for(uint i=0,i_end=exclusions->size();i<i_end;i++) {
+            if(exclusions->at(i)->divides(monomial) && exclusions->at(i)->compare(monomial)!=0)
+                return false;
+        }
+    }
+    return result;
 }
 
 template<typename T>
@@ -106,7 +133,14 @@ bool LinearCompUniverse<T>::contains(uint64_t pos) const
 template<typename T>
 bool LinearCompUniverse<T>::contains(IMonomial* monomial) const
 {
-    return monomial->getDegree()<=limit;
+     bool result = monomial->getDegree()<=limit;
+     if(result) {
+        for(uint i=0,i_end=ICompUniverse<T>::exclusions->size();i<i_end;i++) {
+            if(ICompUniverse<T>::exclusions->at(i)->divides(monomial) && ICompUniverse<T>::exclusions->at(i)->compare(monomial)!=0)
+                return false;
+        }
+    }
+    return result;
 }
 
 template<typename T>
@@ -439,11 +473,19 @@ bool SpecificCompUniverseNoOrderPos<T>::contains(uint64_t pos) const
 template<typename T>
 bool SpecificCompUniverseNoOrderPos<T>::contains(IMonomial* monomial) const
 {
+    bool result = false;
     for(uint i=0,end=U->size();i<end;i++) {
         if(monomial->divides(U->at(i)->getMonomial()))
-            return true;
+            result = true;
+            break;
     }
-    return false;
+    if(result) {
+        for(uint i=0,i_end=ICompUniverse<T>::exclusions->size();i<i_end;i++) {
+            if(ICompUniverse<T>::exclusions->at(i)->divides(monomial) && ICompUniverse<T>::exclusions->at(i)->compare(monomial)!=0)
+                return false;
+        }
+    }
+    return result;
 }
 
 template<typename T>
