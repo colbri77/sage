@@ -569,6 +569,8 @@ template<typename T>
 void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isBasis,MutantState* mstate)
 {
     uint H = 0;
+    bool skip2a = false;
+    int xl = -1;
     uint64_t hash[2] = {0,0};
     uint d_elim = 0;
     stack<IPolynomial<T>*> M = stack<IPolynomial<T>*>();
@@ -621,28 +623,30 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
         }
         else if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR || 
                 optimization==IMPROVED_MUTANT_OPTIMISTIC) {
-            //mutantS2a:
-            int xl = -1;
-            for(int i=indet-1;i>=0;i--) {
-                if(mstate->X_[i]) {
-                    mstate->X_[i] = false;
-                    xl = i;
-                    break;
-                }
-            }
-            if(xl==-1) {
-                for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
-                    currentPol = mstate->G->at(i);
-                    if(currentPol->at(0)->getMonomial()->getDegree()==mstate->d_min) {
-                        mstate->X_[currentPol->at(0)->getMonomial()->getLV()] = true;
-                    }
-                }
-                d_elim = mstate->d_min + 1;
+            if(!skip2a) {
+                //mutantS2a:
+                xl = -1;
                 for(int i=indet-1;i>=0;i--) {
                     if(mstate->X_[i]) {
                         mstate->X_[i] = false;
                         xl = i;
                         break;
+                    }
+                }
+                if(xl==-1) {
+                    for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
+                        currentPol = mstate->G->at(i);
+                        if(currentPol->at(0)->getMonomial()->getDegree()==mstate->d_min) {
+                            mstate->X_[currentPol->at(0)->getMonomial()->getLV()] = true;
+                        }
+                    }
+                    d_elim = mstate->d_min + 1;
+                    for(int i=indet-1;i>=0;i--) {
+                        if(mstate->X_[i]) {
+                            mstate->X_[i] = false;
+                            xl = i;
+                            break;
+                        }
                     }
                 }
             }
@@ -726,6 +730,8 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
         for(;!M.empty();) {
             currentPol = M.top();
             M.pop();
+            if(xl != -1 && xl != currentPol->at(0)->getMonomial()->getLV())
+                continue;
             currentPol->hash(hash);
             if(!mstate->P_mutant->contains(hash)) {
                 necessary--;
@@ -789,6 +795,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
     //mutantS11:
         if(mstate->d_min<mstate->d_max) {
             mstate->d_min++;
+            skip2a = true;
             goto mutantS2;
         }
     //mutantS12:
