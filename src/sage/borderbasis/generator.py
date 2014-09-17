@@ -143,7 +143,7 @@ class BBGenerator(SageObject):
 
         The default optimization level is 'enhanced'. For the levels 'optimistic' and 'experimental', termination can no longer be proven.
     """
-    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True, use_autoreduction=True, use_pol_exclusion=False, reduce_monomials_but=None):
+    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True, use_autoreduction=True, use_pol_exclusion=False):
         r"""
         Generates a ``BBGenerator`` and initializes it with the chosen optimization level
 
@@ -163,7 +163,6 @@ class BBGenerator(SageObject):
         self.use_positions = use_positions
         self.use_matrix = use_matrix
         self.use_autoreduction = use_autoreduction
-        self.reduce_monomials_but = reduce_monomials_but
         self.use_pol_exclusion = use_pol_exclusion
 
         if(use_matrix and not use_positions):
@@ -172,7 +171,7 @@ class BBGenerator(SageObject):
     def __cinit__(self):
         pass
     
-    def calc_basis(self,generators,modPolynomial):
+    def calc_basis(self,generators,modPolynomial,reduce_monomials_but=None):
         r"""
         Calculates the border basis of the generator polynomials
 
@@ -220,8 +219,8 @@ class BBGenerator(SageObject):
 
             Currently, it is only possible to calculate border bases of polynomials in the galois field.
         """
-        if(self.reduce_monomials_but != None):
-            generators = self.shrink_system(generators,self.reduce_monomials_but)
+        if(reduce_monomials_but != None):
+            generators = self.shrink_system(generators,reduce_monomials_but)
         field = None
         matrix = None
         if(not self.use_matrix):
