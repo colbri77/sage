@@ -119,6 +119,9 @@ from sage.borderbasis.cppWrapper import *
 from sage.structure.sage_object import SageObject
 from sage.rings.polynomial.multi_polynomial_sequence import PolynomialSequence as PS
 from sage.rings.polynomial.pbori import BooleanPolynomial
+from sage.rings.polynomial.pbori import BooleanMonomial
+from sage.rings.polynomial.pbori import BooleanMonomialMonoid
+from sage.rings.polynomial.pbori import BooleanPolynomialRing
 
 class BBGenerator(SageObject):
     r"""
@@ -220,7 +223,7 @@ class BBGenerator(SageObject):
             Currently, it is only possible to calculate border bases of polynomials in the galois field.
         """
         if(reduce_monomials_but != None):
-            generators = self.shrink_system(generators,reduce_monomials_but)
+            generators = self.shrink_system(generators,reduce_monomials_but,self.use_autoreduction)
         field = None
         matrix = None
         if(not self.use_matrix):
@@ -243,7 +246,19 @@ class BBGenerator(SageObject):
 
         return (basis,orderIdeal,statistics)
 
-    def shrink_system(self,plist,keyvars):
+    def shrink_system(self,plist,keyvars,polybori=False):
+        if polybori and type(plist[0])!=BooleanPolynomial:
+            newRing = BooleanPolynomialRing(len(plist.ring().variable_names()),plist.ring().variable_names())
+            plistNew = PS([],newRing)
+            for p in plist:
+                pNew = BooleanPolynomial(newRing)
+                for m in p.monomials():
+                    mNew = BooleanPolynomial(newRing) + 1
+                    for v in m.variables():
+                        mNew = mNew * v
+                    pNew = pNew + m
+                plistNew.append(pNew)
+            plist = plistNew
         variables = plist.ring().gens()
         for v in variables:
             useful = True
