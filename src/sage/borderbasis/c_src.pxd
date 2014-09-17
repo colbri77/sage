@@ -1,3 +1,5 @@
+from libcpp cimport bool
+
 cdef extern from "stdint.h":
     ctypedef unsigned long long uint64_t
 
@@ -102,18 +104,16 @@ cdef extern from "src/include/borderBasisTools.h" namespace "borderbasis":
         IMPROVED_MUTANT
         IMPROVED_MUTANT_LINEAR
         IMPROVED_MUTANT_OPTIMISTIC
+    cdef cppclass BBConfig:
+        BBConfig(unsigned int indeterminates,
+                 OptLevel optimization,
+                 void* field,
+                 void* matrixFactory,
+                 void* polFactory,
+                 void* monFactory,
+                 bool use_pol_exclusion)
     cdef cppclass BorderBasisTools[T]:
-        BorderBasisTools(IField[T]* field,
-                         PolynomialFactory[T]* polFactory,
-                         IMonomialFactory* monFactory,
-                         unsigned int indeterminates,
-                         OptLevel optimizations) except +
-        BorderBasisTools(int dummyNecessaryForPython,
-                         IMatrixFactory[T]* matrixFactory,
-                         PolynomialFactory[T]* polFactory,
-                         IMonomialFactory* monFactory,
-                         unsigned int indeterminates,
-                         OptLevel optimizations) except +
+        BorderBasisTools(BBConfig* config) except +
         void calculateBasis(void* i,
                          void* o,
                          void* orderIdeal)

@@ -50,14 +50,14 @@ void IPolynomial<T>::hash(uint64_t* out) const
         if(cm->supportsGetPos()) {
             monomial = cm->getPos();
         } else {
-            char* tmpBuf2 = new char[getIndet()];
             uint indet = getIndet();
+            char* tmpBuf2 = new char[indet];
             for(uint k=0;k<indet;k++) {
                 tmpBuf2[k] = (char)cm->at(k);
             }
             void* stateTmp = XXH64_init(0xdeadbeef);
-            XXH64_update(stateTmp,tmpBuf2,getIndet());
-            monomial = XXH32_digest(stateTmp);
+            XXH64_update(stateTmp,tmpBuf2,indet);
+            monomial = XXH64_digest(stateTmp);
             delete tmpBuf2;
         }
         *((T*)tmpBuf) = factor;

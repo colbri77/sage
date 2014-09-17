@@ -68,10 +68,14 @@ cdef class PyFieldFn(PyField_uint64):
     r"""
     Parameter class, used to send C++ classes to python methods
     """
-    def __cinit__(self,minPolynomial):
-        self.thisptr = <IField[uint64_t]*>(new FieldFn(minPolynomial))
+    def __cinit__(self,isNull,minPolynomial):
+        if isNull:
+            self.thisptr = <IField[uint64_t]*>NULL
+        else:
+            self.thisptr = <IField[uint64_t]*>(new FieldFn(minPolynomial))
     def __dealloc__(self):
-        del self.thisptr
+        if self.thisptr != <IField[uint64_t]*>NULL:
+            del self.thisptr
 
 cdef class PyMatrixFactory_uint64:
     r"""
@@ -84,8 +88,21 @@ cdef class PyMatrixFactory_Fn_uint64(PyMatrixFactory_uint64):
     r"""
     Parameter class, used to send C++ classes to python methods
     """
-    def __cinit__(self,minPolynomial):
-        self.thisptr = <IMatrixFactory[uint64_t]*>(new MatrixFactory_Fn(minPolynomial))
+    def __cinit__(self,isNull,minPolynomial): 
+        if isNull:
+            self.thisptr = <IMatrixFactory[uint64_t]*>NULL
+        else:
+            self.thisptr = <IMatrixFactory[uint64_t]*>(new MatrixFactory_Fn(minPolynomial))
+    def __dealloc__(self):
+        if self.thisptr != <IMatrixFactory[uint64_t]*>NULL:
+            del self.thisptr
+
+cdef class PyBBConfig:
+    r"""
+    Parameter class, used to send C++ classes to python methods
+    """
+    def __cinit__(self,indet,OptLevel opt,PyField_uint64 field,PyMatrixFactory_uint64 mFac,PyPolynomialFactory_uint64 polFac,PyMonomialFactory monFac,use_pol_ex):
+        self.thisptr = <BBConfig*>(new BBConfig(indet,opt,field.thisptr,mFac.thisptr,polFac.thisptr,monFac.thisptr,use_pol_ex))
     def __dealloc__(self):
         del self.thisptr
 
@@ -116,7 +133,7 @@ cdef class PyBorderBasisTools_uint64:
         <sage.borderbasis.cppWrapper.PyBorderBasisTools_uint64>
 
     """
-    def __cinit__(self,PyField_uint64 field,PyMatrixFactory_uint64 matrixFactory,PyPolynomialFactory_uint64 polFactory,PyMonomialFactory monFactory,indeterminates,optimizations):
+    def __cinit__(self,PyField_uint64 field,PyMatrixFactory_uint64 matrixFactory,PyPolynomialFactory_uint64 polFactory,PyMonomialFactory monFactory,indeterminates,optimizations,use_pol_exclusion=False):
         self.field = field
         self.matrixFactory = matrixFactory
         self.polFactory = polFactory
@@ -141,10 +158,9 @@ cdef class PyBorderBasisTools_uint64:
         else:
             raise ValueError("optimization value \""+optimizations+"\" unknown")
 
-        if(field is not None):
-            self.thisptr = new BorderBasisTools[uint64_t](field.thisptr,polFactory.thisptr,monFactory.thisptr,indeterminates,self.optimizations)
-        else:
-            self.thisptr = new BorderBasisTools[uint64_t](1,matrixFactory.thisptr,polFactory.thisptr,monFactory.thisptr,indeterminates,self.optimizations)
+        self.cfg = PyBBConfig(indeterminates,self.optimizations,field,matrixFactory,polFactory,monFactory,use_pol_exclusion)
+        
+        self.thisptr = new BorderBasisTools[uint64_t](self.cfg.thisptr)
 
     def __dealloc__(self):
         del self.thisptr

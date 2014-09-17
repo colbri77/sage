@@ -19,20 +19,17 @@ template<typename T>
 uint BorderBasisTools<T>::processors = omp_get_num_procs();
 
 template<typename T>
-BorderBasisTools<T>::BorderBasisTools(IField<T>* field,
-                     PolynomialFactory<T>* polFactory,
-                     IMonomialFactory* monFactory,
-                     uint indeterminates,
-                     OptLevel optimization)
-: field(field),
-matrixFactory(NULL),
-polFactory(polFactory),
-monFactory(monFactory),
-indet(indeterminates),
+BorderBasisTools<T>::BorderBasisTools(BBConfig* config)
+: field((IField<T>*)(config->field)),
+matrixFactory((IMatrixFactory<T>*)(config->matrixFactory)),
+polFactory((PolynomialFactory<T>*)(config->polFactory)),
+monFactory((IMonomialFactory*)(config->monFactory)),
+indet(config->indeterminates),
 statistics(new Statistics()),
-optimization(optimization),
+optimization(config->optimization),
 universe(NULL),
-getPosSupport(monFactory->supportsGetPos())
+getPosSupport(((IMonomialFactory*)monFactory)->supportsGetPos()),
+config(config)
 {
     if(getPosSupport) {
         switch(optimization) {
@@ -53,44 +50,6 @@ getPosSupport(monFactory->supportsGetPos())
             universe = new SpecificCompUniverseNoOrderPos<T>(indet);
     }
 }
-
-template<typename T>
-BorderBasisTools<T>::BorderBasisTools(int dummyNeccessaryForCython,
-                     IMatrixFactory<T>* matrixFactory,
-                     PolynomialFactory<T>* polFactory,
-                     IMonomialFactory* monFactory,
-                     uint indeterminates,
-                     OptLevel optimization)
-: field(NULL),
-matrixFactory(matrixFactory),
-polFactory(polFactory),
-monFactory(monFactory),
-indet(indeterminates),
-statistics(new Statistics()),
-optimization(optimization),
-universe(NULL),
-getPosSupport(monFactory->supportsGetPos())
-{
-    if(getPosSupport) {
-        switch(optimization) {
-        case NONE: universe = new LinearCompUniverse<T>(indet); break;
-        case ENHANCED: universe = new SpecificCompUniverse<T>(indet); break;
-        case OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
-        case EXPERIMENTAL: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
-        case MUTANT: universe = new SpecificCompUniverse<T>(indet); break; 
-        case IMPROVED_MUTANT: universe = new SpecificCompUniverse<T>(indet); break;
-        case IMPROVED_MUTANT_LINEAR: universe = new LinearCompUniverse<T>(indet); break;
-        case IMPROVED_MUTANT_OPTIMISTIC: universe = new SpecificCompUniverseNoBorderLog<T>(indet); break;
-        default: ASSERT_NOT_REACHED;
-        }
-    } else {
-        if(optimization==NONE)
-            universe = new LinearCompUniverse<T>(indet);
-        else
-            universe = new SpecificCompUniverseNoOrderPos<T>(indet);
-    }
-}
-
 
 template<typename T>
 BorderBasisTools<T>::~BorderBasisTools()
@@ -523,20 +482,22 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         int checkIndex = 0;
         for(int i=(int)in->size()-1;i>limit;i--) {
             if(!universe->contains(in->at(i)->at(0)->getMonomial()))
-               // we only care about minPolynomials if they are small enough to actually exclude something at all
-               // this is on expense of the non-matrix solution, but it speeds up the matrix solution (which turned out
-               // to be more efficient anyways).
-               /*singleVarIndex = in->at(i)->at(0)->getMonomial()->getSingleVarIndex();
-               for(uint k=1,k_end=in->at(i)->size();k<k_end && singleVarIndex!=-1;k++) {
-                   checkIndex = in->at(i)->at(k)->getMonomial()->getSingleVarIndex();
-                   if(checkIndex!=singleVarIndex && checkIndex!=0) {
-                       singleVarIndex = -1;
-                       break;
+                if(config->use_pol_exclusion) {
+                   // we only care about minPolynomials if they are small enough to actually exclude something at all
+                   // this is on expense of the non-matrix solution, but it speeds up the matrix solution (which turned out
+                   // to be more efficient anyways).
+                   singleVarIndex = in->at(i)->at(0)->getMonomial()->getSingleVarIndex();
+                   for(uint k=1,k_end=in->at(i)->size();k<k_end && singleVarIndex!=-1;k++) {
+                       checkIndex = in->at(i)->at(k)->getMonomial()->getSingleVarIndex();
+                       if(checkIndex!=singleVarIndex && checkIndex!=0) {
+                           singleVarIndex = -1;
+                           break;
+                       }
+                   }
+                   if(singleVarIndex!=-1) { // we found a minimal polynomial!
+                       universe->exclude(in->at(i)->at(0)->getMonomial());
                    }
                }
-               if(singleVarIndex!=-1) { // we found a minimal polynomial!
-                   universe->exclude(in->at(i)->at(0)->getMonomial());
-               }*/
                ovTemp.push_back(in->lift(i));
         }
 
@@ -818,7 +779,6 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
     for(uint i=0,end_i=in->size();i<end_i;i++) {
         p->push(new Term<T>(1,in->at(i)->at(0)->getMonomial()->copy()));
     }
-
     for(int i=p->size()-1;i>=0;i--) {
         IMonomial* tLead = p->at(i)->getMonomial();
         while(tLead->compare(t)>0) {
@@ -829,14 +789,15 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
             t = t->next();
             if(tTemp == t)
                 break;
-            if(!inUniverse)
+            if(!inUniverse && t!=tTemp)
                 tTemp->del();
         }
         tTemp = t;
         t = t->next();
         if(tTemp == t)
             break;
-        tTemp->del();
+        if(tTemp != t)
+            tTemp->del();
     }
     while(!universe->beyondLastElement(t) && tTemp != t) {
         bool inUniverse = universe->contains(t);
@@ -846,7 +807,7 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
         t = t->next();
         if(tTemp == t)
             break;
-        if(!inUniverse)
+        if(!inUniverse && t!=tTemp)
             tTemp->del();
     }
     delete p;

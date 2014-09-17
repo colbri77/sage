@@ -631,9 +631,9 @@ TAKE_OWN IMonomial* DegLexMonomialNoOrderPosGF2::next() const
             }
         }
         if(i<0)
-            return (DegLexMonomialNoOrderPosGF2*)this; // no more elements
+            return (DegLexMonomialNoOrderPosGF2*)this->copy(); // no more elements
         result->rep[i]++;
-        for(int k=(int)indet-1;k>i;k++,oneCtr--) {
+        for(int k=(int)indet-1;k>i;k--,oneCtr--) {
             if(oneCtr>0)
                 result->rep[k] = 1;
             else

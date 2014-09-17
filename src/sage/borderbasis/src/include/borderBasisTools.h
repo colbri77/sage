@@ -24,21 +24,26 @@ enum OptLevel {
 	IMPROVED_MUTANT_OPTIMISTIC,
 };
 
+class BBConfig {
+    public:
+        // Cython is extremely picky, struct is not working, only class with explicit setters
+	BBConfig(uint indeterminates,OptLevel optimization,void* field,void* matrixFactory,void* polFactory, void* monFactory, bool use_pol_exclusion)
+	: indeterminates(indeterminates), optimization(optimization), field(field), matrixFactory(matrixFactory), polFactory(polFactory),
+	  monFactory(monFactory),use_pol_exclusion(use_pol_exclusion){}
+        uint indeterminates;
+	OptLevel optimization;
+	void* field;
+	void* matrixFactory;
+        void* polFactory;
+	void* monFactory;
+	bool use_pol_exclusion;
+};
+
 template<typename T>
 class BorderBasisTools
 {
 public:
-    BorderBasisTools(IField<T>* field,
-                     PolynomialFactory<T>* polFactory,
-                     IMonomialFactory* monFactory,
-                     uint indeterminates,
-                     OptLevel optimization);
-    BorderBasisTools(int dummyNeccessaryForCython,
-                     IMatrixFactory<T>* matrixFactory,
-                     PolynomialFactory<T>* polFactory,
-                     IMonomialFactory* monFactory,
-                     uint indeterminates,
-                     OptLevel optimization);
+    BorderBasisTools(BBConfig* config);
 
     virtual ~BorderBasisTools();
 
@@ -65,6 +70,7 @@ private:
     OptLevel optimization;
     ICompUniverse<T>* universe;
     bool getPosSupport;
+    BBConfig* config;
 
     class MutantState {
     public:

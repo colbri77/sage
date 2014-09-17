@@ -117,6 +117,8 @@ From mini AES:
 
 from sage.borderbasis.cppWrapper import *
 from sage.structure.sage_object import SageObject
+from sage.rings.polynomial.multi_polynomial_sequence import PolynomialSequence as PS
+from sage.rings.polynomial.pbori import BooleanPolynomial
 
 class BBGenerator(SageObject):
     r"""
@@ -141,7 +143,7 @@ class BBGenerator(SageObject):
 
         The default optimization level is 'enhanced'. For the levels 'optimistic' and 'experimental', termination can no longer be proven.
     """
-    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True):
+    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True, use_autoreduction=True, use_pol_exclusion=False, reduce_monomials_but=None):
         r"""
         Generates a ``BBGenerator`` and initializes it with the chosen optimization level
 
@@ -160,6 +162,9 @@ class BBGenerator(SageObject):
         self.optimization = optimization
         self.use_positions = use_positions
         self.use_matrix = use_matrix
+        self.use_autoreduction = use_autoreduction
+        self.reduce_monomials_but = reduce_monomials_but
+        self.use_pol_exclusion = use_pol_exclusion
 
         if(use_matrix and not use_positions):
             raise RuntimeError("use_matrix needs use_positions enabled")
@@ -215,15 +220,19 @@ class BBGenerator(SageObject):
 
             Currently, it is only possible to calculate border bases of polynomials in the galois field.
         """
+        if(self.reduce_monomials_but != None):
+            generators = self.shrink_system(generators,self.reduce_monomials_but)
         field = None
         matrix = None
         if(not self.use_matrix):
-            field = PyFieldFn(modPolynomial)
+            field = PyFieldFn(False,modPolynomial)
+            matrix = PyMatrixFactory_Fn_uint64(True,modPolynomial)
         else:
-            matrix = PyMatrixFactory_Fn_uint64(modPolynomial)
-        polynomialFactory = PyPolynomialFactory_uint64(modPolynomial==2)
-        monFactory = PyMonomialFactory(self.use_positions,generators.nvariables(),modPolynomial==2)
-        bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization)
+            field = PyFieldFn(True,modPolynomial)
+            matrix = PyMatrixFactory_Fn_uint64(False,modPolynomial)
+        polynomialFactory = PyPolynomialFactory_uint64(modPolynomial==2 and self.use_autoreduction)
+        monFactory = PyMonomialFactory(self.use_positions,generators.nvariables(),modPolynomial==2 and self.use_autoreduction)
+        bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization,self.use_pol_exclusion)
 
         basis,orderIdeal = bbt.calculate_basis(generators)
         statistics = bbt.get_statistics()
@@ -234,6 +243,22 @@ class BBGenerator(SageObject):
         del bbt
 
         return (basis,orderIdeal,statistics)
+
+    def shrink_system(self,plist,keyvars):
+        variables = plist.ring().gens()
+        for v in variables:
+            useful = True
+            for kv in keyvars:
+                if kv == v:
+                    useful = False
+            if not useful:
+                continue
+
+            index = self._find_reduceable_index(plist,v)
+            if index!=-1:
+                 B = plist[index]+v
+                 plist = self._reduce(plist,v,B)
+        return plist
 
     def _latex_(self):
         r"""
@@ -259,4 +284,52 @@ class BBGenerator(SageObject):
             BBGenerator(optimization='experimental')
         """
         return self._latex_()
+
+    def _reduce(self,plist,A,B):
+        result = PS([],plist.ring())
+        for pol in plist:
+            pNew = plist[0]-plist[0]
+            # subs() is buggy in Polybori - otherwise, just use that
+            if type(pol)!=BooleanPolynomial:
+                pNew = pol.subs({A.monomials()[0]: B})
+                if pNew != plist[0]-plist[0]:
+                    result.append(pNew)
+                continue
+            for monomial in pol.monomials():
+                reducable = False
+                reducable = monomial.reducible_by(A.monomials()[0])
+                if reducable:
+                    monNew = 1
+                    try:
+                        monNew = monomial/A.monomials()[0]
+                    except:
+                        for v in monomial.variables():
+                            if v!=A.monomials()[0].variables()[0]:
+                                monNew = monNew * v
+                    pNew = pNew + monNew*B
+                else:
+                    pNew = pNew + monomial
+            if pNew != plist[0]-plist[0]:
+                result.append(pNew)
+        return result
+
+    def _find_reduceable_index(self,plist,var):
+        i = -1
+        for pol in plist:
+            i = i + 1
+            pol = pol-var
+            useable = True
+            for mon in pol.monomials():
+                reducible = False
+                try:
+                    reducible = mon.reducible_by(var.monomials()[0])
+                except:
+                    reducible = var.monomials()[0].divides(mon)
+                if reducible:
+                    useable = False
+                    break
+            if useable:
+                return i
+        return -1
+
 
