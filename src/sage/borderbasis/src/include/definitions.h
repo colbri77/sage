@@ -18,8 +18,10 @@ typedef unsigned int uint;
 
 #if __cplusplus <= 199711L
     #define OVERRIDE /*override*/
+    #define FINAL /*final*/
 #else
     #define OVERRIDE override
+    #define FINAL final
 #endif
 
 // namespace definitions:

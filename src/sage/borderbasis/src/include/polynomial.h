@@ -29,7 +29,6 @@ class Polynomial : public IPolynomial<T>
 
         virtual void incrementAtIndet(uint index) OVERRIDE;
 
-    protected:
         uint indet;
         OwningVector<Term<T>*>* rep;
 };
@@ -41,9 +40,10 @@ public:
     PolynomialGF2(uint indet);
     virtual ~PolynomialGF2();
 
-    virtual void incrementAtIndet(uint index) OVERRIDE;
     virtual TAKE_OWN IPolynomial<T>* copy() const OVERRIDE;
     virtual void push(TAKE_OWN Term<T>* term) OVERRIDE;
+
+    virtual void incrementAtIndet(uint index) OVERRIDE;
 };
 
 } // namespace polynomial

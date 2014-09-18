@@ -223,7 +223,7 @@ class BBGenerator(SageObject):
             Currently, it is only possible to calculate border bases of polynomials in the galois field.
         """
         if(reduce_monomials_but != None):
-            generators = self.shrink_system(generators,reduce_monomials_but,self.use_autoreduction)
+            generators = self.shrink_system(generators,reduce_monomials_but,self.use_autoreduction and modPolynomial==2)
         field = None
         matrix = None
         if(not self.use_matrix):
