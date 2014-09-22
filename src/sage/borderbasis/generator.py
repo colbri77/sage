@@ -246,7 +246,8 @@ class BBGenerator(SageObject):
 
         return (basis,orderIdeal,statistics)
 
-    def shrink_system(self,plist,keyvars,polybori=False):
+    def shrink_system(self,plist,keyvars,polybori=False,max_degree=0x7fffffff):
+        # if we should autoreduce the system, we port it to BooleanPolynomial, where this stuff gets done automatically
         if polybori and type(plist[0])!=BooleanPolynomial:
             newRing = BooleanPolynomialRing(len(plist.ring().variable_names()),plist.ring().variable_names())
             plistNew = PS([],newRing)
@@ -259,6 +260,7 @@ class BBGenerator(SageObject):
                     pNew = pNew + m
                 plistNew.append(pNew)
             plist = plistNew
+        # now we shrink the system
         variables = plist.ring().gens()
         for v in variables:
             useful = True
@@ -271,7 +273,7 @@ class BBGenerator(SageObject):
             index = self._find_reduceable_index(plist,v)
             if index!=-1:
                  B = plist[index]+v
-                 plist = self._reduce(plist,v,B)
+                 plist = self._reduce(plist,v,B,max_degree)
         return plist
 
     def _latex_(self):
@@ -299,15 +301,17 @@ class BBGenerator(SageObject):
         """
         return self._latex_()
 
-    def _reduce(self,plist,A,B):
+    def _reduce(self,plist,A,B,max_degree):
         result = PS([],plist.ring())
         for pol in plist:
             pNew = plist[0]-plist[0]
             # subs() is buggy in Polybori - otherwise, just use that
             if type(pol)!=BooleanPolynomial:
                 pNew = pol.subs({A.monomials()[0]: B})
-                if pNew != plist[0]-plist[0]:
+                if pNew != plist[0]-plist[0] and pNew.degree()<=max_degree:
                     result.append(pNew)
+                elif pNew != plist[0]-plist[0]:
+                    result.append(pol)
                 continue
             for monomial in pol.monomials():
                 reducable = False
@@ -323,8 +327,10 @@ class BBGenerator(SageObject):
                     pNew = pNew + monNew*B
                 else:
                     pNew = pNew + monomial
-            if pNew != plist[0]-plist[0]:
+            if pNew != plist[0]-plist[0] and pNew.degree()<=max_degree:
                 result.append(pNew)
+            elif pNew != plist[0]-plist[0]:
+                result.append(pol)
         return result
 
     def _find_reduceable_index(self,plist,var):
