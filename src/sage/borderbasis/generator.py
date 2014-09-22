@@ -348,7 +348,7 @@ class BBGenerator(SageObject):
                 if reducible:
                     useable = False
                     break
-            if useable:
+            if useable and pol.degree()<3:
                 return i
         return -1
 
