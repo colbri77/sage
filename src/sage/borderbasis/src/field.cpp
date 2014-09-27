@@ -37,4 +37,12 @@ uint64_t FieldFn::divide(uint64_t x,uint64_t y) const
     return (uint64_t)gf_div(s,(uint)x,(uint)y);
 }
 
+uint64_t FieldFn::pow(uint64_t x,uint64_t y) const
+{
+    uint64_t result = 1;
+    for(uint64_t i=0;i<y;i++)
+        result = (uint64_t)gf_mul(s,(uint)result,(uint)x);
+    return result;
+}
+
 } // namespace math

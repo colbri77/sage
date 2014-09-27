@@ -26,6 +26,7 @@ cdef class PyMatrixFactory_Fn_uint64(PyMatrixFactory_uint64):
 
 cdef class PyBBConfig:
     cdef BBConfig* thisptr
+    cdef bool* exclusions
 
 cdef class PyBorderBasisTools_uint64:
     cdef BorderBasisTools[uint64_t]* thisptr

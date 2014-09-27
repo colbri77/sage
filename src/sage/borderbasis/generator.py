@@ -174,7 +174,7 @@ class BBGenerator(SageObject):
     def __cinit__(self):
         pass
     
-    def calc_basis(self,generators,modPolynomial,reduce_monomials_but=None):
+    def calc_basis(self,generators,modPolynomial,reduce_monomials_but=None,keep_only=None):
         r"""
         Calculates the border basis of the generator polynomials
 
@@ -222,6 +222,23 @@ class BBGenerator(SageObject):
 
             Currently, it is only possible to calculate border bases of polynomials in the galois field.
         """
+        use_variable_exclusion = False
+        if(keep_only != None):
+            use_variable_exclusion = True
+
+            variables = generators.variables()
+            bool_keep_map = [False]*len(variables)
+            for var in keep_only:
+                for i in range(0,len(variables)):
+                    if var == variables[i]:
+                        bool_keep_map[i] = True
+            keep_only = bool_keep_map
+        else:
+            keep_only = [False,]
+
+        if(use_variable_exclusion and (not self.use_autoreduction or not modPolynomial==2)):
+            raise RuntimeError("Variable exclusion is currently only enabled in GF(2) with enabled autoreduction.")
+
         if(reduce_monomials_but != None):
             generators = self.shrink_system(generators,reduce_monomials_but,self.use_autoreduction and modPolynomial==2)
         field = None
@@ -234,7 +251,7 @@ class BBGenerator(SageObject):
             matrix = PyMatrixFactory_Fn_uint64(False,modPolynomial)
         polynomialFactory = PyPolynomialFactory_uint64(modPolynomial==2 and self.use_autoreduction)
         monFactory = PyMonomialFactory(self.use_positions,generators.nvariables(),modPolynomial==2 and self.use_autoreduction)
-        bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization,self.use_pol_exclusion)
+        bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization,self.use_pol_exclusion,use_variable_exclusion,keep_only)
 
         basis,orderIdeal = bbt.calculate_basis(generators)
         statistics = bbt.get_statistics()

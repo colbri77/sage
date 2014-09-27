@@ -29,7 +29,9 @@ statistics(new Statistics()),
 optimization(config->optimization),
 universe(NULL),
 getPosSupport(((IMonomialFactory*)monFactory)->supportsGetPos()),
-config(config)
+config(config),
+excludedList(new bool[config->indeterminates]),
+excludedListLen(0)
 {
     if(getPosSupport) {
         switch(optimization) {
@@ -59,6 +61,7 @@ BorderBasisTools<T>::~BorderBasisTools()
     //delete polFactory;
     //delete monFactory;
     delete statistics;
+    delete excludedList;
 }
 
 template<typename T>
@@ -146,6 +149,9 @@ void BorderBasisTools<T>::calculateBasis(const IOwningList<IPolynomial<T>*>* in,
     statistics->start();
     out->clear();
     universe->clear();
+    for(uint i=0;i<config->indeterminates;i++)
+        excludedList[i] = false;
+    excludedListLen = 0;
 
     // initialize working vector
     OwningVector<IPolynomial<T>*> tmpVec = OwningVector<IPolynomial<T>*>();
@@ -220,6 +226,7 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
     }
     else if(optimization==ENHANCED) {
         for(uint i=0;i<indet && result;i++) {
+            if(excludedList[i]) continue;
             IPolynomial<T>* pNew = orderIdeal->copy();
             pNew->incrementAtIndet(i);
             if(!universe->contains(pNew)) {
@@ -231,6 +238,7 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
     }
     else if(optimization==MUTANT) {
         for(uint i=0;i<indet && result;i++) {
+            if(excludedList[i]) continue;
             IPolynomial<T>* pNew = orderIdeal->copy();
             pNew->incrementAtIndet(i);
             if(!universe->contains(pNew)) {
@@ -251,6 +259,7 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
             }
         }
         for(uint i=0;i<indet && result;i++) {
+            if(excludedList[i]) continue;
             IPolynomial<T>* pNew = orderIdeal->copy();
             pNew->incrementAtIndet(i);
             if(!universe->contains(pNew)) {
@@ -274,6 +283,7 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
         }
         OwningVector<IPolynomial<T>*>* ovTemp = new OwningVector<IPolynomial<T>*>();
         for(uint i=0;i<indet;i++) {
+            if(excludedList[i]) continue;
             IPolynomial<T>* pNew = orderIdeal->copy();
             pNew->incrementAtIndet(i);
             if(!universe->contains(pNew)) {
@@ -291,10 +301,11 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
             result = false;
         }
         delete ovTemp;
-    } 
+    }
     else if(optimization==OPTIMISTIC || optimization==EXPERIMENTAL) {
         OwningVector<IPolynomial<T>*>* ovTemp = new OwningVector<IPolynomial<T>*>();
         for(uint i=0;i<indet;i++) {
+            if(excludedList[i]) continue;
             IPolynomial<T>* pNew = orderIdeal->copy();
             pNew->incrementAtIndet(i);
             if(!universe->contains(pNew)) {
@@ -309,7 +320,7 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
         }
         delete ovTemp;
     }
-
+    
     return result;
 }
 
@@ -412,10 +423,40 @@ void BorderBasisTools<T>::reduceFinal(IOwningList<IPolynomial<T>*>* in)
 template<typename T>
 void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
 {
+    bool variableReduced = false;
     // 1. If the list does not already describe a basis, convert it to one
     if(!isBasis) {
-        if(field) addAndReduce(in,0);
-        else toSimpleBasis(in,true);
+        do {
+            variableReduced = false;
+            if(field) addAndReduce(in,0);
+            else toSimpleBasis(in,true);
+
+            if(config->use_variable_exclusion) {
+                for(uint i=0;i<in->size();i++) {
+                    int indetIndex = 0;
+                    // currently only allowed for GF(2)
+                    IPolynomial<T>* red = in->at(i)->getLinearReducible(&indetIndex,config->variable_exclusions,NULL);
+                    if(red!=NULL) {
+                        for(uint k=0;k<in->size();k++) {
+                            in->at(k)->substitute(indetIndex,red,NULL);
+                        }
+                        IMonomial* excluded = monFactory->create();
+                        IMonomial* exTmp = excluded;
+                        excluded = excluded->set(indetIndex,1);
+                        if(exTmp != excluded)
+                            exTmp->del();
+                        universe->exclude(excluded);
+                        excluded->del();
+                        delete red;
+                        monFactory->excludeIndet(indetIndex);
+                        excludedList[indetIndex] = true;
+                        variableReduced = true;
+                        excludedListLen++;
+                        break;
+                    }
+                }
+            }
+        } while(variableReduced);
     }
 
     // 2. We create a map to store hashes of all processed polynomials so that we can ignore
@@ -452,6 +493,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
 
             // 3.3 Generate "offsprings"
             for(uint k=0;k<indet;k++) {
+                if(excludedList[k]) continue;
                 p = currentPol->copy();
                 p->incrementAtIndet(k);
                 p->hash(hash);
@@ -469,15 +511,51 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
                 end = in->size();
             }
         }
-        
+
         // 4. We now have the extended list, calculate a new basis of it.
         if(field) addAndReduce(in,lastOriginalPolynomial+1);
         else toSimpleBasis(in,false);
-        
+
+
+        variableReduced = false;
+        // intermission: check if we can (and should) autoreduce
+        if(config->use_variable_exclusion) {
+            bool repeat = false;
+            do {
+                repeat = false;
+                for(uint i=0;i<in->size();i++) {
+                    int indetIndex = 0;
+                    // currently only allowed for GF(2)
+                    IPolynomial<T>* red = in->at(i)->getLinearReducible(&indetIndex,config->variable_exclusions,NULL);
+                    if(red!=NULL) {
+                        for(uint k=0;k<in->size();k++) {
+                            in->at(k)->substitute(indetIndex,red,NULL);
+                        }
+                        IMonomial* excluded = monFactory->create();
+                        IMonomial* exTmp = excluded;
+                        excluded = excluded->set(indetIndex,1);
+                        if(excluded != exTmp)
+                            exTmp->del();
+                        universe->exclude(excluded);
+                        excluded->del();
+                        delete red;
+                        monFactory->excludeIndet(indetIndex);
+                        excludedList[indetIndex] = true;
+                        variableReduced = true;
+                        repeat = true;
+                        excludedListLen++;
+                        if(field) addAndReduce(in,0);
+                        else toSimpleBasis(in,false);
+                        break;
+                    }
+                }
+            } while(repeat);
+        }
+
         OwningVector<IPolynomial<T>*> ovTemp = OwningVector<IPolynomial<T>*>();
 
         // 5. remove elements that have a leading term outside the universe
-        int limit = (field ? lastOriginalPolynomial : -1);
+        int limit = ((field || variableReduced) ? lastOriginalPolynomial : -1);
         int singleVarIndex = 0;
         int checkIndex = 0;
         for(int i=(int)in->size()-1;i>limit;i--) {
@@ -519,9 +597,8 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
             universe->add(in,in->size()-newPolCtr-1);
         } while(newPolCtr>0);
 
-
         // 8. If the size didn't change, its still the same basis and we're done.
-        if(in->size()==lastOriginalPolynomial+1)
+        if(in->size()==lastOriginalPolynomial+1 && !variableReduced)
             break;
     }
 }
@@ -537,11 +614,41 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
     IPolynomial<T>* currentPol = NULL;
     OwningVector<IPolynomial<T>*> W_ = OwningVector<IPolynomial<T>*>();
     OwningVector<IPolynomial<T>*> W = OwningVector<IPolynomial<T>*>();
+    bool variableReduced = false;
 
     // never called before, execute step 1
     if(!isBasis) {
-        if(field) addAndReduce(in,0);
-        else toSimpleBasis(in,true);
+        do {
+            variableReduced = false;
+            if(field) addAndReduce(in,0);
+            else toSimpleBasis(in,true);
+
+            if(config->use_variable_exclusion) {
+                for(uint i=0;i<in->size();i++) {
+                    int indetIndex = 0;
+                    // currently only allowed for GF(2)
+                    IPolynomial<T>* red = in->at(i)->getLinearReducible(&indetIndex,config->variable_exclusions,NULL);
+                    if(red!=NULL) {
+                        for(uint k=0;k<in->size();k++) {
+                            in->at(k)->substitute(indetIndex,red,NULL);
+                        }
+                        IMonomial* excluded = monFactory->create();
+                        IMonomial* exTmp = excluded;
+                        excluded = excluded->set(indetIndex,1);
+                        if(excluded != exTmp)
+                            exTmp->del();
+                        universe->exclude(excluded);
+                        excluded->del();
+                        delete red;
+                        monFactory->excludeIndet(indetIndex);
+                        excludedList[indetIndex] = true;
+                        variableReduced = true;
+                        excludedListLen++;
+                        break;
+                    }
+                }
+            }
+        } while(variableReduced);
 
         mstate->G->clear();
         mstate->P_mutant->clear();
@@ -574,6 +681,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                     d_elim = mstate->d_min+1;
 
                     for(uint k=0;k<indet;k++) {
+                        if(excludedList[k]) continue;
                         IPolynomial<T>* p = currentPol->copy();
                         p->incrementAtIndet(k);
                         mstate->G->push_back(p);
@@ -581,7 +689,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 }
             }
         }
-        else if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR || 
+        else if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR ||
                 optimization==IMPROVED_MUTANT_OPTIMISTIC) {
             //mutantS2a:
             xl = -1;
@@ -623,6 +731,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                     d_elim = mstate->d_min+1;
 
                     for(uint k=0;k<indet;k++) {
+                        if(excludedList[k]) continue;
                         IPolynomial<T>* p = currentPol->copy();
                         p->incrementAtIndet(k);
                         mstate->G->push_back(p);
@@ -634,7 +743,37 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
     mutantS3:
         if(field) addAndReduce(mstate->G,H);
         else toSimpleBasis(mstate->G,false);
- 
+
+        variableReduced = false;
+        if(config->use_variable_exclusion) {
+            for(uint i=0;i<mstate->G->size();i++) {
+                int indetIndex = 0;
+                // currently only allowed for GF(2)
+                IPolynomial<T>* red = mstate->G->at(i)->getLinearReducible(&indetIndex,config->variable_exclusions,NULL);
+                if(red!=NULL) {
+                    for(uint k=0;k<mstate->G->size();k++) {
+                        mstate->G->at(k)->substitute(indetIndex,red,NULL);
+                    }
+                    for(uint k=0;k<in->size();k++) {
+                        in->at(k)->substitute(indetIndex,red,NULL);
+                    }
+                    IMonomial* excluded = monFactory->create();
+                    IMonomial* exTmp = excluded;
+                    excluded = excluded->set(indetIndex,1);
+                    if(exTmp != excluded)
+                        exTmp->del();
+                    universe->exclude(excluded);
+                    excluded->del();
+                    delete red;
+                    monFactory->excludeIndet(indetIndex);
+                    excludedList[indetIndex] = true;
+                    variableReduced = true;
+                    excludedListLen++;
+                    break;
+                }
+            }
+        }
+
     //mutantS4:
         for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
             if(mstate->G->at(i)->at(0)->getMonomial()->getDegree()<d_elim)
@@ -644,13 +783,13 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
     //mutantS5:
     //mutantS5_:
         int necessary = (int)M.size();
-        if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR || 
+        if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR ||
            optimization==IMPROVED_MUTANT_OPTIMISTIC) {
             // caluclate the "necessary" amount of polynomials
             uint k = 0x7fffffff;
             uint Q = 0;
             stack<IPolynomial<T>*> sTmp = stack<IPolynomial<T>*>();
-            
+
             while(M.size()>0) {
                 currentPol = M.top();
                 M.pop();
@@ -675,14 +814,14 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             int64_t Sk = 0;
             int64_t lastValue = 1;
             for(uint l=1;l<=k+1;l++) {
-                lastValue *= (indet-l+1);
+                lastValue *= (indet-excludedListLen-l+1);
                 lastValue /= l;
                 Sk += lastValue;
             }
 
-            int nc = (Sk-Q)/indet+1;
+            int nc = (Sk-Q)/(indet-excludedListLen)+1;
             //if(nc<=0) necessary = 1;
-            //else 
+            //else
             if(nc<necessary) necessary = nc;
         }
 
@@ -701,6 +840,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 if(necessary>=0) {
                     mstate->P_mutant->set(hash,true);
                     for(uint k=0;k<indet;k++) {
+                        if(excludedList[k]) continue;
                         IPolynomial<T>* p = currentPol->copy();
                         p->incrementAtIndet(k);
                         mstate->G->push_back(p);
@@ -750,7 +890,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 p->hash(hash);
                 mstate->VHash->set(hash,true);
             }
-            goto mutantS7; 
+            goto mutantS7;
         }
     //mutantS11:
         if(mstate->d_min<mstate->d_max) {

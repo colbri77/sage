@@ -2,6 +2,8 @@
 
 #include "include/owningVector.h"
 
+#include <stack>
+
 namespace polynomial {
 
 //-----Polynomial<T>-----------------------------------
@@ -194,6 +196,75 @@ void PolynomialGF2<T>::push(TAKE_OWN Term<T>* term)
         }
     }
     Polynomial<T>::rep->insert(Polynomial<T>::rep->end(),term);
+}
+
+template<typename T>
+TAKE_OWN IPolynomial<T>* PolynomialGF2<T>::getLinearReducible(int* index,const bool* indexMap,const IField<T>* f) const
+{
+    *index = -1;
+    Term<T>* t = NULL;
+    uint i = 0;
+    for(uint i_end=Polynomial<T>::rep->size();i<i_end;i++) {
+        t = Polynomial<T>::rep->at(i);
+        IMonomial* m = t->getMonomial();
+        if(m->getDegree()>1)
+            return NULL;
+        int varIndex = m->getDegree()==1 ? (int)m->getLV() : -1;
+        if(varIndex!=-1 && !indexMap[varIndex]) {
+            *index = varIndex;
+            break;
+        }
+    }
+    if((*index) == -1)
+        return NULL;
+
+    IPolynomial<T>* result = copy();
+    result->remove(i);
+
+    return result;
+}
+
+template<typename T>
+void PolynomialGF2<T>::substitute(int indet,const IPolynomial<T>* replacement,const IField<T>* f)
+{
+    stack<Term<T>*> _stack = stack<Term<T>*>();
+    for(uint i=0;i<Polynomial<T>::rep->size();i++) {
+        Term<T>* t = Polynomial<T>::rep->at(i);
+        if(t->getMonomial()->at(indet)>0) {
+            Term<T>* tNew = new Term<T>(1,t->getMonomial()->copy()->set(indet,0));
+
+            // actual substitution
+            for(uint k=0,k_end=replacement->size();k<k_end;k++) {
+                Term<T>* r = new Term<T>();
+                const IMonomial* rMonom = replacement->at(k)->getMonomial();
+                r->setCoef(1);
+                IMonomial* m = tNew->getMonomial()->copy();
+                IMonomial* mTmp = NULL;
+                for(uint d=0;d<this->indet;d++) {
+                    if(rMonom->at(d)>0) {
+                        mTmp = m;
+                        m = m->extend(d,1);
+                        if(m != mTmp)
+                            mTmp->del();
+                    }
+                }
+                r->setMonomial(m);
+                _stack.push(r);
+            }
+
+            delete tNew;
+
+            Polynomial<T>::remove(i);
+            i--;
+        }
+    }
+
+    // now append new Terms to the polynomial
+    while(!_stack.empty()) {
+        Term<T>* t = _stack.top();
+        _stack.pop();
+        push(t);
+    }
 }
 
 template class PolynomialGF2<uint64_t>;

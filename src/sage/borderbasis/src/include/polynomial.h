@@ -44,6 +44,8 @@ public:
     virtual void push(TAKE_OWN Term<T>* term) OVERRIDE;
 
     virtual void incrementAtIndet(uint index) OVERRIDE;
+    virtual TAKE_OWN IPolynomial<T>* getLinearReducible(int* index,const bool* indexMap,const IField<T>* f) const OVERRIDE;
+    virtual void substitute(int indet,const IPolynomial<T>* replacement,const IField<T>* f) OVERRIDE;
 };
 
 } // namespace polynomial

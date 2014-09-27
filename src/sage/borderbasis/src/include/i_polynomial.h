@@ -33,6 +33,9 @@ class IPolynomial
 
         virtual void hash(uint64_t* out /*size 2*/) const;
         virtual void subtract(IPolynomial<T>* other,IField<T>* f);
+        virtual void multiply(uint64_t constant, const IField<T>* f);
+        virtual TAKE_OWN IPolynomial<T>* getLinearReducible(int* index,const bool* indexMap,const IField<T>* f) const;
+        virtual void substitute(int indet,const IPolynomial<T>* replacement,const IField<T>* f);
 };
 
 typedef IPolynomial<uint64_t> IPolynomial_uint64;

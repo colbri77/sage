@@ -1,5 +1,6 @@
 #include "include/i_polynomial.h"
 
+#include <stack>
 #include "hash/xxhash.h"
 
 namespace polynomial {
@@ -101,6 +102,26 @@ void IPolynomial<T>::subtract(IPolynomial<T>* other,IField<T>* f)
             push(newTerm);
         }
     }
+}
+
+template<typename T>
+TAKE_OWN IPolynomial<T>* IPolynomial<T>::getLinearReducible(int* index,const bool* indexMap,const IField<T>* f) const
+{
+    return NULL; // aka don't try to reduce
+}
+
+template<typename T>
+void IPolynomial<T>::multiply(uint64_t constant, const IField<T>* f)
+{
+    for(uint i=0;i<size();i++) {
+        at(i)->setCoef(f->multiply(at(i)->getCoef(),constant));
+    }
+}
+
+template<typename T>
+void IPolynomial<T>::substitute(int indet,const IPolynomial<T>* replacement,const IField<T>* f)
+{
+    NOT_IMPLEMENTED;
 }
 
 template class IPolynomial<uint64_t>;

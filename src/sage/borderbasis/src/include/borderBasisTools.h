@@ -27,16 +27,19 @@ enum OptLevel {
 class BBConfig {
     public:
         // Cython is extremely picky, struct is not working, only class with explicit setters
-	BBConfig(uint indeterminates,OptLevel optimization,void* field,void* matrixFactory,void* polFactory, void* monFactory, bool use_pol_exclusion)
+	BBConfig(uint indeterminates,OptLevel optimization,void* field,void* matrixFactory,void* polFactory, void* monFactory, bool use_pol_exclusion,bool use_variable_exclusion,bool* variable_exclusions)
 	: indeterminates(indeterminates), optimization(optimization), field(field), matrixFactory(matrixFactory), polFactory(polFactory),
-	  monFactory(monFactory),use_pol_exclusion(use_pol_exclusion){}
-        uint indeterminates;
+	  monFactory(monFactory),use_pol_exclusion(use_pol_exclusion), use_variable_exclusion(use_variable_exclusion),
+	  variable_exclusions(variable_exclusions){}
+    uint indeterminates;
 	OptLevel optimization;
 	void* field;
 	void* matrixFactory;
-        void* polFactory;
+    void* polFactory;
 	void* monFactory;
 	bool use_pol_exclusion;
+	bool use_variable_exclusion;
+	bool* variable_exclusions;
 };
 
 template<typename T>
@@ -71,6 +74,8 @@ private:
     ICompUniverse<T>* universe;
     bool getPosSupport;
     BBConfig* config;
+    bool* excludedList;
+    uint excludedListLen;
 
     class MutantState {
     public:

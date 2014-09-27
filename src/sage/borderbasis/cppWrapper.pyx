@@ -7,6 +7,8 @@ AUTHORS:
 
 - Christian Olbrich (2014): initial version
 """
+cimport cython
+from libc.stdlib cimport malloc, free
 from c_src cimport *
 from sage.rings.polynomial.multi_polynomial_sequence import PolynomialSequence
 from sage.calculus.var import var
@@ -101,10 +103,14 @@ cdef class PyBBConfig:
     r"""
     Parameter class, used to send C++ classes to python methods
     """
-    def __cinit__(self,indet,OptLevel opt,PyField_uint64 field,PyMatrixFactory_uint64 mFac,PyPolynomialFactory_uint64 polFac,PyMonomialFactory monFac,use_pol_ex):
-        self.thisptr = <BBConfig*>(new BBConfig(indet,opt,field.thisptr,mFac.thisptr,polFac.thisptr,monFac.thisptr,use_pol_ex))
+    def __cinit__(self,indet,OptLevel opt,PyField_uint64 field,PyMatrixFactory_uint64 mFac,PyPolynomialFactory_uint64 polFac,PyMonomialFactory monFac,use_pol_ex,use_variable_exclusion,variable_exclusions):
+        self.exclusions = <bool*>malloc(len(variable_exclusions)*cython.sizeof(bool))
+        for i in xrange(len(variable_exclusions)):
+            self.exclusions[i] = variable_exclusions[i]
+        self.thisptr = <BBConfig*>(new BBConfig(indet,opt,field.thisptr,mFac.thisptr,polFac.thisptr,monFac.thisptr,use_pol_ex,use_variable_exclusion,self.exclusions))
     def __dealloc__(self):
         del self.thisptr
+        free(self.exclusions)
 
 cdef class PyBorderBasisTools_uint64:
     r"""
@@ -133,7 +139,7 @@ cdef class PyBorderBasisTools_uint64:
         <sage.borderbasis.cppWrapper.PyBorderBasisTools_uint64>
 
     """
-    def __cinit__(self,PyField_uint64 field,PyMatrixFactory_uint64 matrixFactory,PyPolynomialFactory_uint64 polFactory,PyMonomialFactory monFactory,indeterminates,optimizations,use_pol_exclusion=False):
+    def __cinit__(self,PyField_uint64 field,PyMatrixFactory_uint64 matrixFactory,PyPolynomialFactory_uint64 polFactory,PyMonomialFactory monFactory,indeterminates,optimizations,use_pol_exclusion=False,use_variable_exclusion=False,variable_exclusions=[False,]):
         self.field = field
         self.matrixFactory = matrixFactory
         self.polFactory = polFactory
@@ -158,7 +164,7 @@ cdef class PyBorderBasisTools_uint64:
         else:
             raise ValueError("optimization value \""+optimizations+"\" unknown")
 
-        self.cfg = PyBBConfig(indeterminates,self.optimizations,field,matrixFactory,polFactory,monFactory,use_pol_exclusion)
+        self.cfg = PyBBConfig(indeterminates,self.optimizations,field,matrixFactory,polFactory,monFactory,use_pol_exclusion,use_variable_exclusion,variable_exclusions)
         
         self.thisptr = new BorderBasisTools[uint64_t](self.cfg.thisptr)
 

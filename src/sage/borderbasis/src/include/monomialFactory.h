@@ -15,6 +15,7 @@ public:
     virtual bool supportsGetPos() const = 0;
     virtual TAKE_OWN IMonomial* create() const = 0;
     virtual TAKE_OWN IMonomial* create(uint64_t pos) const = 0;
+    virtual void excludeIndet(uint index) {NOT_IMPLEMENTED;}
 };
 
 class MonomialFactoryNoOrderPos : public IMonomialFactory
@@ -58,6 +59,11 @@ public:
 
     virtual TAKE_OWN IMonomial* create() const OVERRIDE;
     virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
+
+    virtual void excludeIndet(uint index) OVERRIDE;
+
+private:
+    bool* excludedIndets;
 };
 
 class MonomialFactoryDegLexGF2 : public MonomialFactoryDegLex
@@ -68,6 +74,11 @@ public:
 
     virtual TAKE_OWN IMonomial* create() const OVERRIDE;
     virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
+
+    virtual void excludeIndet(uint index) OVERRIDE;
+
+private:
+    bool* excludedIndets;
 };
 
 } // namespace polynomial

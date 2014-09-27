@@ -58,8 +58,9 @@ bool ICompUniverse<T>::contains(IMonomial* monomial) const
     bool result = contains(monomial->getPos());
     if(result) {
         for(uint i=0,i_end=exclusions->size();i<i_end;i++) {
-            if(exclusions->at(i)->divides(monomial) && exclusions->at(i)->compare(monomial)!=0)
+            if(exclusions->at(i)->divides(monomial) && exclusions->at(i)->compare(monomial)!=0) {
                 return false;
+            }
         }
     }
     return result;
@@ -136,8 +137,9 @@ bool LinearCompUniverse<T>::contains(IMonomial* monomial) const
      bool result = monomial->getDegree()<=limit;
      if(result) {
         for(uint i=0,i_end=ICompUniverse<T>::exclusions->size();i<i_end;i++) {
-            if(ICompUniverse<T>::exclusions->at(i)->divides(monomial) && ICompUniverse<T>::exclusions->at(i)->compare(monomial)!=0)
+            if(ICompUniverse<T>::exclusions->at(i)->divides(monomial) && ICompUniverse<T>::exclusions->at(i)->compare(monomial)!=0) {
                 return false;
+            }
         }
     }
     return result;
@@ -258,11 +260,22 @@ void SpecificCompUniverse<T>::addBorder()
         for(uint i=0;i<ICompUniverse<T>::indet;i++) {
             IMonomial* tNew = t->copy();
             tNew = tNew->extend(i,1);
-            if(tNew->getPos()>maxPos) {
-                maxPos = tNew->getPos();
-                maxDegree = tNew->getDegree();
+
+            bool excluded = false;
+            for(uint i=0;i<ICompUniverse<T>::exclusions->size() && !excluded;i++) {
+                excluded |= ICompUniverse<T>::exclusions->at(i)->divides(tNew);
+                excluded |= (ICompUniverse<T>::exclusions->at(i)->compare(tNew)==0);
             }
-            _stack.push(tNew);
+
+            if(!excluded) {
+                if(tNew->getPos()>maxPos) {
+                    maxPos = tNew->getPos();
+                    maxDegree = tNew->getDegree();
+                }
+                _stack.push(tNew);
+            } else {
+                tNew->del();
+            }
         }
         t->del();
     }
@@ -503,7 +516,17 @@ void SpecificCompUniverseNoOrderPos<T>::addBorder()
         for(uint k=0,end_k=U->getIndet();k<end_k;k++) {
             IMonomial* m = U->at(i)->getMonomial()->copy();
             m = m->extend(k,1);
-            p->push(new Term<T>(1,m));
+
+            bool excluded = false;
+            for(uint i=0;i<ICompUniverse<T>::exclusions->size() && !excluded;i++) {
+                excluded |= ICompUniverse<T>::exclusions->at(i)->divides(m);
+                excluded |= (ICompUniverse<T>::exclusions->at(i)->compare(m)==0);
+            }
+
+            if(!excluded)
+                p->push(new Term<T>(1,m));
+            else
+                m->del();
         }
         newElements->push_back(p);
     }

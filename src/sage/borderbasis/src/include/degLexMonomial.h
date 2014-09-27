@@ -65,9 +65,11 @@ protected:
 
     virtual DegLexMonomial* create(uint indet, FastFlexibleArray* monomBox) const OVERRIDE;
 
-    DegLexMonomialGF2(uint64_t pos, uint indet, FastFlexibleArray* monomBox);
-    DegLexMonomialGF2(uint indet, FastFlexibleArray* monomBox);
+    DegLexMonomialGF2(uint64_t pos, uint indet, FastFlexibleArray* monomBox,bool* excludedIndets);
+    DegLexMonomialGF2(uint indet, FastFlexibleArray* monomBox,bool* excludedIndets);
     virtual ~DegLexMonomialGF2();
+
+    bool* excludedIndets;
 };
 
 class DegLexMonomialNoOrderPos : public IMonomial
@@ -115,8 +117,10 @@ protected:
 
     virtual DegLexMonomialNoOrderPos* create(uint indet) const OVERRIDE;
 
-    DegLexMonomialNoOrderPosGF2(uint indet);
+    DegLexMonomialNoOrderPosGF2(uint indet,bool* excludedIndets);
     virtual ~DegLexMonomialNoOrderPosGF2();
+
+    bool* excludedIndets;
 };
 
 

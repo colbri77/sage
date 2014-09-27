@@ -83,19 +83,21 @@ TAKE_OWN IMonomial* MonomialFactoryDegLex::create(uint64_t pos) const
 //-----MonomialFactoryNoOrderPosGF2-------------------------------
 
 MonomialFactoryNoOrderPosGF2::MonomialFactoryNoOrderPosGF2(uint indet)
-:MonomialFactoryNoOrderPos(indet)
+:MonomialFactoryNoOrderPos(indet),
+excludedIndets(new bool[indet])
 {
-
+    for(uint i=0;i<indet;i++)
+        excludedIndets[i] = false;
 }
 
 MonomialFactoryNoOrderPosGF2::~MonomialFactoryNoOrderPosGF2()
 {
-
+    delete excludedIndets;
 }
 
 TAKE_OWN IMonomial* MonomialFactoryNoOrderPosGF2::create() const
 {
-    return (IMonomial*)new DegLexMonomialNoOrderPosGF2(indet);
+    return (IMonomial*)new DegLexMonomialNoOrderPosGF2(indet,excludedIndets);
 }
 
 TAKE_OWN IMonomial* MonomialFactoryNoOrderPosGF2::create(uint64_t pos) const
@@ -103,17 +105,26 @@ TAKE_OWN IMonomial* MonomialFactoryNoOrderPosGF2::create(uint64_t pos) const
     NOT_IMPLEMENTED;
 }
 
+void MonomialFactoryNoOrderPosGF2::excludeIndet(uint index)
+{
+    excludedIndets[index] = true;
+}
+
 //----------MonomialFactoryDegLexGF2---------------------------------
 
 MonomialFactoryDegLexGF2::MonomialFactoryDegLexGF2(uint indet)
-: MonomialFactoryDegLex()
+: MonomialFactoryDegLex(),
+excludedIndets(new bool[indet])
 {
+    for(uint i=0;i<indet;i++)
+        excludedIndets[i] = false;
     MonomialFactoryDegLex::indet = indet;
     create(0);
 }
 
 MonomialFactoryDegLexGF2::~MonomialFactoryDegLexGF2()
 {
+    delete excludedIndets;
 }
 
 TAKE_OWN IMonomial* MonomialFactoryDegLexGF2::create() const
@@ -126,13 +137,16 @@ TAKE_OWN IMonomial* MonomialFactoryDegLexGF2::create(uint64_t pos) const
     IMonomial* result = (IMonomial*)(monomials->get(pos));
 
     if(result == NULL) {
-        DegLexMonomialGF2* elem = new DegLexMonomialGF2(pos,indet,monomials);
+        DegLexMonomialGF2* elem = new DegLexMonomialGF2(pos,indet,monomials,excludedIndets);
         monomials->add(pos,elem);
         result = elem;
     }
     return result;
 }
 
-
+void MonomialFactoryDegLexGF2::excludeIndet(uint index)
+{
+    excludedIndets[index] = true;
+}
 
 } // namespace polynomial

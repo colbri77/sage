@@ -361,14 +361,16 @@ void DegLexMonomial::del()
 }
 
 //----- DegLexMonomialGF2 -------------------------------------------
-DegLexMonomialGF2::DegLexMonomialGF2(uint64_t pos, uint indet, FastFlexibleArray* monomBox)
-: DegLexMonomial(pos,indet,monomBox)
+DegLexMonomialGF2::DegLexMonomialGF2(uint64_t pos, uint indet, FastFlexibleArray* monomBox,bool* excludedIndets)
+: DegLexMonomial(pos,indet,monomBox),
+excludedIndets(excludedIndets)
 {
 
 }
 
-DegLexMonomialGF2::DegLexMonomialGF2(uint indet, FastFlexibleArray* monomBox)
-: DegLexMonomial(indet,monomBox)
+DegLexMonomialGF2::DegLexMonomialGF2(uint indet, FastFlexibleArray* monomBox,bool* excludedIndets)
+: DegLexMonomial(indet,monomBox),
+excludedIndets(excludedIndets)
 {
 
 }
@@ -380,7 +382,7 @@ DegLexMonomialGF2::~DegLexMonomialGF2()
 
 DegLexMonomial* DegLexMonomialGF2::create(uint indet, FastFlexibleArray* monomBox) const
 {
-    return new DegLexMonomialGF2(indet,monomBox);
+    return new DegLexMonomialGF2(indet,monomBox,excludedIndets);
 }
 
 TAKE_OWN IMonomial* DegLexMonomialGF2::set(uint index, uint value)
@@ -407,13 +409,13 @@ TAKE_OWN IMonomial* DegLexMonomialGF2::next() const
         result = (DegLexMonomialGF2*)(monomBox->get(curPos));
 
         if(result == NULL) {
-            result = new DegLexMonomialGF2(curPos,indet,monomBox);
+            result = new DegLexMonomialGF2(curPos,indet,monomBox,excludedIndets);
             monomBox->add(curPos,result);
         }
 
         fitting = true;
         for(uint i=0;i<indet && fitting;i++) {
-            if(result->at(i)>1)
+            if(result->at(i)>(excludedIndets[i] ? 0 : 1))
                 fitting = false;
         }
         if(result->getDegree()>indet)
@@ -581,8 +583,9 @@ int DegLexMonomialNoOrderPos::compare(const IMonomial* other) const
 
 //----- DegLexMonomialNoOrderPosGF2 -------------------------------------------
 
-DegLexMonomialNoOrderPosGF2::DegLexMonomialNoOrderPosGF2(uint indet)
-: DegLexMonomialNoOrderPos(indet)
+DegLexMonomialNoOrderPosGF2::DegLexMonomialNoOrderPosGF2(uint indet,bool* excludedIndets)
+: DegLexMonomialNoOrderPos(indet),
+excludedIndets(excludedIndets)
 {
 
 }
@@ -594,7 +597,7 @@ DegLexMonomialNoOrderPosGF2::~DegLexMonomialNoOrderPosGF2()
 
 DegLexMonomialNoOrderPos* DegLexMonomialNoOrderPosGF2::create(uint indet) const
 {
-    return new DegLexMonomialNoOrderPosGF2(indet);
+    return new DegLexMonomialNoOrderPosGF2(indet,excludedIndets);
 }
 
 
@@ -617,12 +620,16 @@ TAKE_OWN IMonomial* DegLexMonomialNoOrderPosGF2::next() const
 {
     DegLexMonomialNoOrderPosGF2* result = (DegLexMonomialNoOrderPosGF2*)copy();
 
+    uint minIndet = indet-1;
+    for(;excludedIndets[minIndet];minIndet--);
+
     if(degree==0) {
-        result->rep[indet-1] = 1;
+        result->rep[minIndet] = 1;
     } else {
         int oneCtr = 0;
         int i = (int)indet-1;
         for(;i>=0;i--) {
+            if(excludedIndets[i]) continue;
             if(result->rep[i]==1) {
                 oneCtr++;
             } else if(oneCtr>0) {
@@ -634,6 +641,7 @@ TAKE_OWN IMonomial* DegLexMonomialNoOrderPosGF2::next() const
             return (DegLexMonomialNoOrderPosGF2*)this->copy(); // no more elements
         result->rep[i]++;
         for(int k=(int)indet-1;k>i;k--,oneCtr--) {
+            if(excludedIndets[k]) continue;
             if(oneCtr>0)
                 result->rep[k] = 1;
             else
