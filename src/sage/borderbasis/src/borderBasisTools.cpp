@@ -746,32 +746,39 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
 
         variableReduced = false;
         if(config->use_variable_exclusion) {
-            for(uint i=0;i<mstate->G->size();i++) {
-                int indetIndex = 0;
-                // currently only allowed for GF(2)
-                IPolynomial<T>* red = mstate->G->at(i)->getLinearReducible(&indetIndex,config->variable_exclusions,NULL);
-                if(red!=NULL) {
-                    for(uint k=0;k<mstate->G->size();k++) {
-                        mstate->G->at(k)->substitute(indetIndex,red,NULL);
+            bool repeat = false;
+            do {
+                repeat = false;
+                for(uint i=0;i<mstate->G->size();i++) {
+                    int indetIndex = 0;
+                    // currently only allowed for GF(2)
+                    IPolynomial<T>* red = mstate->G->at(i)->getLinearReducible(&indetIndex,config->variable_exclusions,NULL);
+                    if(red!=NULL) {
+                        for(uint k=0;k<mstate->G->size();k++) {
+                            mstate->G->at(k)->substitute(indetIndex,red,NULL);
+                        }
+                        for(uint k=0;k<in->size();k++) {
+                            in->at(k)->substitute(indetIndex,red,NULL);
+                        }
+                        IMonomial* excluded = monFactory->create();
+                        IMonomial* exTmp = excluded;
+                        excluded = excluded->set(indetIndex,1);
+                        if(excluded != exTmp)
+                            exTmp->del();
+                        universe->exclude(excluded);
+                        excluded->del();
+                        delete red;
+                        monFactory->excludeIndet(indetIndex);
+                        excludedList[indetIndex] = true;
+                        variableReduced = true;
+                        repeat = true;
+                        excludedListLen++;
+                        if(field) addAndReduce(mstate->G,0);
+                        else toSimpleBasis(mstate->G,false);
+                        break;
                     }
-                    for(uint k=0;k<in->size();k++) {
-                        in->at(k)->substitute(indetIndex,red,NULL);
-                    }
-                    IMonomial* excluded = monFactory->create();
-                    IMonomial* exTmp = excluded;
-                    excluded = excluded->set(indetIndex,1);
-                    if(exTmp != excluded)
-                        exTmp->del();
-                    universe->exclude(excluded);
-                    excluded->del();
-                    delete red;
-                    monFactory->excludeIndet(indetIndex);
-                    excludedList[indetIndex] = true;
-                    variableReduced = true;
-                    excludedListLen++;
-                    break;
                 }
-            }
+            } while(repeat);
         }
 
     //mutantS4:

@@ -230,7 +230,7 @@ class BBGenerator(SageObject):
             bool_keep_map = [False]*len(variables)
             for var in keep_only:
                 for i in range(0,len(variables)):
-                    if var == variables[i]:
+                    if ("%s" % var) == ("%s" % (variables[i])):
                         bool_keep_map[i] = True
             keep_only = bool_keep_map
         else:
