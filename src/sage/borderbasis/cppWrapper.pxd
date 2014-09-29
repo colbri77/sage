@@ -43,4 +43,5 @@ cdef class PyBorderBasisTools_uint64:
     cdef _from_native_pol_list(self,PyIOwningList_pol nativeList,ring,variables)
     cdef _from_native_pol(self,PyIPolynomial_uint64 nativePol,ring,variables)
     cdef _get_dict(self,polynomial,variables)
+    cdef _get_variables(self,pythonList)
 

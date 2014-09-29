@@ -227,14 +227,25 @@ cdef class PyBorderBasisTools_uint64:
         nativeOutWrapper.thisptr = nativeOut
         nativeOrderIdealWrapper.thisptr = nativeOrderIdeal
 
-        polynomials = self._from_native_pol_list(nativeOutWrapper,generators.ring(),generators.variables())
-        orderIdeal = self._from_native_pol(nativeOrderIdealWrapper,generators.ring(),generators.variables())
+        polynomials = self._from_native_pol_list(nativeOutWrapper,generators.ring(),self._get_variables(generators))
+        orderIdeal = self._from_native_pol(nativeOrderIdealWrapper,generators.ring(),self._get_variables(generators))
 
         del nativeIn
         del nativeOut
         del nativeOrderIdeal
 
         return (polynomials, orderIdeal)
+
+    cdef _get_variables(self,pythonList):
+        existing = pythonList.variables()
+        ordered = pythonList.ring().gens()
+        result = []
+        for i in ordered:
+            for e in existing:
+                if ("%s" % (i)) == ("%s" % (e)):
+                    result.append(i)
+                    break
+        return result
  
     cdef PyIOwningList_pol _to_native_pol_list(self,pythonList):
         r"""
@@ -252,7 +263,7 @@ cdef class PyBorderBasisTools_uint64:
         """
         result = <IOwningList[IPolynomial_uint64*]*>(new OwningVector[IPolynomial_uint64*]())
         for generator in pythonList:
-            values = self._get_dict(generator,pythonList.variables())
+            values = self._get_dict(generator,self._get_variables(pythonList))
             pol = (<PyPolynomialFactory_uint64>(self.polFactory)).thisptr.create(self.indet)
             for exponents in values:
                 monomial = (<PyMonomialFactory>(self.monFactory)).thisptr.create()
