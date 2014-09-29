@@ -46,9 +46,9 @@ protected:
     int singleVarIndex;
     FastFlexibleArray* monomBox;
 
-    void recalcPos();
+    virtual void recalcPos();
     void recalcDegree();
-    void initFromPos(uint64_t pos);
+    virtual void initFromPos(uint64_t pos);
     void recalcSingleVarIndex();
 };
 
@@ -91,6 +91,7 @@ public:
 
     virtual int compare(const IMonomial* other) const OVERRIDE;
 
+protected:
     uint* rep;
     uint indet;
     uint degree;

@@ -146,7 +146,7 @@ class BBGenerator(SageObject):
 
         The default optimization level is 'enhanced'. For the levels 'optimistic' and 'experimental', termination can no longer be proven.
     """
-    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True, use_autoreduction=True, use_pol_exclusion=False):
+    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True, use_autoreduction=True, use_pol_exclusion=False, order="degrevlex"):
         r"""
         Generates a ``BBGenerator`` and initializes it with the chosen optimization level
 
@@ -162,6 +162,7 @@ class BBGenerator(SageObject):
             sage: BBGenerator()
             BBGenerator(optimization='enhanced')
         """
+        self.order = order
         self.optimization = optimization
         self.use_positions = use_positions
         self.use_matrix = use_matrix
@@ -170,6 +171,10 @@ class BBGenerator(SageObject):
 
         if(use_matrix and not use_positions):
             raise RuntimeError("use_matrix needs use_positions enabled")
+        if(order!="deglex" and order!="degrevlex"):
+            raise RuntimeError("unknown order: use deglex or degrevlex")
+        if((not use_positions) and order!="deglex"):
+            raise RuntimeError("positions are necessary for all orders but deglex")
 
     def __cinit__(self):
         pass
@@ -250,7 +255,7 @@ class BBGenerator(SageObject):
             field = PyFieldFn(True,modPolynomial)
             matrix = PyMatrixFactory_Fn_uint64(False,modPolynomial)
         polynomialFactory = PyPolynomialFactory_uint64(modPolynomial==2 and self.use_autoreduction)
-        monFactory = PyMonomialFactory(self.use_positions,generators.nvariables(),modPolynomial==2 and self.use_autoreduction)
+        monFactory = PyMonomialFactory(self.use_positions,generators.nvariables(),modPolynomial==2 and self.use_autoreduction,self.order)
         bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization,self.use_pol_exclusion,use_variable_exclusion,keep_only)
 
         basis,orderIdeal = bbt.calculate_basis(generators)

@@ -103,6 +103,7 @@ ext_modules = [
                           'sage/borderbasis/src/borderBasisTools.cpp',
                           'sage/borderbasis/src/compUniverse.cpp',
                           'sage/borderbasis/src/degLexMonomial.cpp',
+                          'sage/borderbasis/src/degRevLexMonomial.cpp',
                           'sage/borderbasis/src/i_monomial.cpp',
                           'sage/borderbasis/src/i_polynomial.cpp',
                           'sage/borderbasis/src/monomialFactory.cpp',

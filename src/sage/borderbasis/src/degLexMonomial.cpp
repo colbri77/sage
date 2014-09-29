@@ -63,7 +63,6 @@ TAKE_OWN IMonomial* DegLexMonomial::set(uint index, uint value)
 
     if(result == NULL) {
         result = create(indet,monomBox);
-
         for(uint i=0;i<indet;i++)
             result->rep[i] = rep[i];
         result->degree = degree + (value-rep[index]);
@@ -139,32 +138,8 @@ TAKE_OWN IMonomial* DegLexMonomial::next() const
 
     if(result == NULL) {
         result = create(indet,monomBox);
-
-        for(uint i=0;i<indet;i++)
-            result->rep[i] = rep[i];
-
-        if(degree==0) {
-            result->rep[indet-1] = 1;
-        } else if(indet==1) {
-            result->rep[0]++;
-        } else if(rep[indet-1]>0) {
-            result->rep[indet-1]--;
-            result->rep[indet-2]++;
-        } else {
-            uint nextNonZero = indet-2;
-            for(;rep[nextNonZero]==0;nextNonZero--);
-            if(nextNonZero==0) {
-                result->rep[0] = 0;
-                result->rep[indet-1] = degree+1;
-            } else {
-                result->rep[indet-1] = rep[nextNonZero]-1;
-                result->rep[nextNonZero] = 0;
-                result->rep[nextNonZero-1] = rep[nextNonZero-1]+1;
-            }
-        }
-
         result->pos = pos+1;
-        result->recalcDegree();
+        result->initFromPos(pos+1);
         result->recalcSingleVarIndex();
 
         monomBox->add(pos+1,result);
@@ -409,7 +384,10 @@ TAKE_OWN IMonomial* DegLexMonomialGF2::next() const
         result = (DegLexMonomialGF2*)(monomBox->get(curPos));
 
         if(result == NULL) {
-            result = new DegLexMonomialGF2(curPos,indet,monomBox,excludedIndets);
+            result = (DegLexMonomialGF2*)create(indet,monomBox);
+            result->pos = curPos;
+            result->initFromPos(curPos);
+            result->recalcSingleVarIndex();
             monomBox->add(curPos,result);
         }
 

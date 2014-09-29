@@ -72,14 +72,34 @@ public:
     MonomialFactoryDegLexGF2(uint indet);
     virtual ~MonomialFactoryDegLexGF2();
 
-    virtual TAKE_OWN IMonomial* create() const OVERRIDE;
     virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
 
     virtual void excludeIndet(uint index) OVERRIDE;
 
-private:
+protected:
+    MonomialFactoryDegLexGF2();
+
     bool* excludedIndets;
 };
+
+class MonomialFactoryDegRevLex : public MonomialFactoryDegLex
+{
+public:
+    MonomialFactoryDegRevLex(uint indet);
+    virtual ~MonomialFactoryDegRevLex();
+
+    virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
+};
+
+class MonomialFactoryDegRevLexGF2 : public MonomialFactoryDegLexGF2
+{
+public:
+    MonomialFactoryDegRevLexGF2(uint indet);
+    virtual ~MonomialFactoryDegRevLexGF2();
+
+    virtual TAKE_OWN IMonomial* create(uint64_t pos) const OVERRIDE;
+};
+
 
 } // namespace polynomial
 

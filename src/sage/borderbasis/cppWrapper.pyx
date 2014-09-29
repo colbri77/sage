@@ -33,17 +33,21 @@ cdef class PyMonomialFactory:
     r"""
     Parameter class, used to send C++ classes to python methods
     """
-    def __cinit__(self,use_positions,indet,gf2):
+    def __cinit__(self,use_positions,indet,gf2,order):
         if(gf2):
-            if use_positions:
+            if use_positions and order=="deglex":
                 self.thisptr = <IMonomialFactory*>(new MonomialFactoryDegLexGF2(indet))
-            else:
+            elif (not use_positions) and order=="deglex":
                 self.thisptr = <IMonomialFactory*>(new MonomialFactoryNoOrderPosGF2(indet))
+            elif use_positions and order=="degrevlex":
+                self.thisptr = <IMonomialFactory*>(new MonomialFactoryDegRevLexGF2(indet))
         else:
-            if use_positions:
+            if use_positions and order=="deglex":
                 self.thisptr = <IMonomialFactory*>(new MonomialFactoryDegLex(indet))
-            else:
+            elif (not use_positions) and order=="deglex":
                 self.thisptr = <IMonomialFactory*>(new MonomialFactoryNoOrderPos(indet))
+            elif use_positions and order=="degrevlex":
+                self.thisptr = <IMonomialFactory*>(new MonomialFactoryDegRevLex(indet))
     def __dealloc__(self):
         del self.thisptr
 

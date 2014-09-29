@@ -10,10 +10,11 @@ class IMonomial : public FFArrayElement
 {
 public:
     enum termOrder {
-        DEGLEX
+        DEGLEX=0,
+        DEGREVLEX=1
     };
 
-    const termOrder termOrdering;
+    termOrder termOrdering;
 
     IMonomial(termOrder termOrdering);
 

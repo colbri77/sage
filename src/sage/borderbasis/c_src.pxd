@@ -50,6 +50,12 @@ cdef extern from "src/include/monomialFactory.h" namespace "polynomial":
     cdef cppclass MonomialFactoryDegLexGF2:
         MonomialFactoryDegLexGF2(unsigned int indet) except +
         IMonomial* create()
+    cdef cppclass MonomialFactoryDegRevLex:
+        MonomialFactoryDegRevLex(unsigned int indet) except +
+        IMonomial* create()
+    cdef cppclass MonomialFactoryDegRevLexGF2:
+        MonomialFactoryDegRevLexGF2(unsigned int indet) except +
+        IMonomial* create()
 
 cdef extern from "src/include/i_polynomial.h" namespace "polynomial":
     cdef cppclass IPolynomial_uint64:
