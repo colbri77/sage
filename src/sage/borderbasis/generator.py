@@ -146,7 +146,7 @@ class BBGenerator(SageObject):
 
         The default optimization level is 'enhanced'. For the levels 'optimistic' and 'experimental', termination can no longer be proven.
     """
-    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True, use_autoreduction=True, use_pol_exclusion=False, order="deglex"):
+    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True, use_autoreduction=True, use_pol_exclusion=False, order="deglex",min_mutants_limit=0):
         r"""
         Generates a ``BBGenerator`` and initializes it with the chosen optimization level
 
@@ -168,6 +168,7 @@ class BBGenerator(SageObject):
         self.use_matrix = use_matrix
         self.use_autoreduction = use_autoreduction
         self.use_pol_exclusion = use_pol_exclusion
+        self.min_mutants_limit = min_mutants_limit
 
         if(use_matrix and not use_positions):
             raise RuntimeError("use_matrix needs use_positions enabled")
@@ -256,7 +257,7 @@ class BBGenerator(SageObject):
             matrix = PyMatrixFactory_Fn_uint64(False,modPolynomial)
         polynomialFactory = PyPolynomialFactory_uint64(modPolynomial==2 and self.use_autoreduction)
         monFactory = PyMonomialFactory(self.use_positions,generators.nvariables(),modPolynomial==2 and self.use_autoreduction,self.order)
-        bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization,self.use_pol_exclusion,use_variable_exclusion,keep_only,modPolynomial==2 and self.use_autoreduction)
+        bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization,self.use_pol_exclusion,use_variable_exclusion,keep_only,modPolynomial==2 and self.use_autoreduction,min_mutants_limit)
 
         basis,orderIdeal = bbt.calculate_basis(generators)
         statistics = bbt.get_statistics()

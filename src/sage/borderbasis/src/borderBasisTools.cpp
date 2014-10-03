@@ -835,7 +835,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                     goto mutantS4;
                 }
             }
-
+            if(nc<config->min_mutants_limit) nc = config->min_mutants_limit;
             if(nc<necessary) necessary = nc;
         }
 
