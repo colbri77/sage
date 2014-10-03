@@ -27,7 +27,7 @@ enum OptLevel {
 class BBConfig {
     public:
         // Cython is extremely picky, struct is not working, only class with explicit setters
-	BBConfig(uint indeterminates,OptLevel optimization,void* field,void* matrixFactory,void* polFactory, void* monFactory, bool use_pol_exclusion,bool use_variable_exclusion,bool* variable_exclusions,bool use_gf2_reductions,uint min_mutants_limit)
+	BBConfig(uint indeterminates,OptLevel optimization,void* field,void* matrixFactory,void* polFactory, void* monFactory, bool use_pol_exclusion,bool use_variable_exclusion,bool* variable_exclusions,bool use_gf2_reductions,double min_mutants_limit)
 	: indeterminates(indeterminates), optimization(optimization), field(field), matrixFactory(matrixFactory), polFactory(polFactory),
 	  monFactory(monFactory),use_pol_exclusion(use_pol_exclusion), use_variable_exclusion(use_variable_exclusion),
 	  variable_exclusions(variable_exclusions), use_gf2_reductions(use_gf2_reductions), min_mutants_limit(min_mutants_limit){}
