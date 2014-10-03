@@ -256,7 +256,7 @@ class BBGenerator(SageObject):
             matrix = PyMatrixFactory_Fn_uint64(False,modPolynomial)
         polynomialFactory = PyPolynomialFactory_uint64(modPolynomial==2 and self.use_autoreduction)
         monFactory = PyMonomialFactory(self.use_positions,generators.nvariables(),modPolynomial==2 and self.use_autoreduction,self.order)
-        bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization,self.use_pol_exclusion,use_variable_exclusion,keep_only)
+        bbt = PyBorderBasisTools_uint64(field,matrix,polynomialFactory,monFactory,generators.nvariables(),self.optimization,self.use_pol_exclusion,use_variable_exclusion,keep_only,modPolynomial==2 and self.use_autoreduction)
 
         basis,orderIdeal = bbt.calculate_basis(generators)
         statistics = bbt.get_statistics()

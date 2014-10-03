@@ -31,7 +31,8 @@ TAKE_OWN IMonomial* MonomialFactoryNoOrderPos::create() const
 
 TAKE_OWN IMonomial* MonomialFactoryNoOrderPos::create(uint64_t pos) const
 {
-
+    NOT_IMPLEMENTED;
+    return NULL;
 }
 
 //----------MonomialFactoryDegLex---------------------------------
@@ -70,7 +71,7 @@ TAKE_OWN IMonomial* MonomialFactoryDegLex::create() const
 TAKE_OWN IMonomial* MonomialFactoryDegLex::create(uint64_t pos) const
 {
     IMonomial* result = (IMonomial*)(monomials->get(pos));
-    
+
     if(result == NULL) {
         DegLexMonomial* elem = new DegLexMonomial(pos,indet,monomials);
         monomials->add(pos,elem);
@@ -195,13 +196,13 @@ MonomialFactoryDegRevLexGF2::~MonomialFactoryDegRevLexGF2()
 TAKE_OWN IMonomial* MonomialFactoryDegRevLexGF2::create(uint64_t pos) const
 {
     IMonomial* result = (IMonomial*)(MonomialFactoryDegLex::monomials->get(pos));
-    
+
     if(result == NULL) {
         DegRevLexMonomialGF2* elem = new DegRevLexMonomialGF2(pos,MonomialFactoryDegLex::indet,MonomialFactoryDegLex::monomials,MonomialFactoryDegLexGF2::excludedIndets);
         MonomialFactoryDegLex::monomials->add(pos,elem);
         result = elem;
     }
-    
+
     return result;
 }
 

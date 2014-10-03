@@ -320,7 +320,7 @@ bool BorderBasisTools<T>::checkOrderIdeal(const IPolynomial<T>* orderIdeal,Mutan
         }
         delete ovTemp;
     }
-    
+
     return result;
 }
 
@@ -781,10 +781,13 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             } while(repeat);
         }
 
-    //mutantS4:
+    mutantS4:
         for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
-            if(mstate->G->at(i)->at(0)->getMonomial()->getDegree()<d_elim)
-                M.push(mstate->G->at(i));
+            if(mstate->G->at(i)->at(0)->getMonomial()->getDegree()<d_elim) {
+                mstate->G->at(i)->hash(hash);
+                if(!mstate->P_mutant->contains(hash))
+                    M.push(mstate->G->at(i));
+            }
         }
 
     //mutantS5:
@@ -818,17 +821,21 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                     Q++;
             }
 
-            int64_t Sk = 0;
-            int64_t lastValue = 1;
-            for(uint l=1;l<=k+1;l++) {
-                lastValue *= (indet-excludedListLen-l+1);
-                lastValue /= l;
-                Sk += lastValue;
-            }
+            int64_t Sk = getLastMonomialPos(k+1);
 
             int nc = (Sk-Q)/(indet-excludedListLen)+1;
-            //if(nc<=0) necessary = 1;
-            //else
+
+            if(nc<=0) {
+                // futher extension of M would reduce to zero, skip them.
+                while(!M.empty()) {
+                    currentPol = M.top();
+                    M.pop();
+                    currentPol->hash(hash);
+                    mstate->P_mutant->set(hash,true);
+                    goto mutantS4;
+                }
+            }
+
             if(nc<necessary) necessary = nc;
         }
 
@@ -839,19 +846,17 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             currentPol = M.top();
             M.pop();
             currentPol->hash(hash);
-            if(!mstate->P_mutant->contains(hash)) {
-                necessary--;
-                isEmpty = false;
-                if(currentPol->at(0)->getMonomial()->getDegree()<d_elim_new)
-                    d_elim_new = currentPol->at(0)->getMonomial()->getDegree();
-                if(necessary>=0) {
-                    mstate->P_mutant->set(hash,true);
-                    for(uint k=0;k<indet;k++) {
-                        if(excludedList[k]) continue;
-                        IPolynomial<T>* p = currentPol->copy();
-                        p->incrementAtIndet(k);
-                        mstate->G->push_back(p);
-                    }
+            necessary--;
+            isEmpty = false;
+            if(currentPol->at(0)->getMonomial()->getDegree()<d_elim_new)
+                d_elim_new = currentPol->at(0)->getMonomial()->getDegree();
+            if(necessary>=0) {
+                mstate->P_mutant->set(hash,true);
+                for(uint k=0;k<indet;k++) {
+                    if(excludedList[k]) continue;
+                    IPolynomial<T>* p = currentPol->copy();
+                    p->incrementAtIndet(k);
+                    mstate->G->push_back(p);
                 }
             }
         }
@@ -957,6 +962,34 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
     }
     delete p;
     t->del();
+}
+
+template<typename T>
+int64_t BorderBasisTools<T>::getLastMonomialPos(uint degree) const
+{
+    int64_t result = 0;
+    if(degree==0)
+        return 0;
+
+    if(config->use_gf2_reductions) {
+        int64_t lastValue = 1;
+        for(uint l=1;l<=degree;l++) {
+            lastValue *= (indet-excludedListLen-l+1);
+            lastValue /= l;
+            result += lastValue;
+        }
+    } else {
+        result = indet;
+        uint64_t tmp = indet;
+
+        for(uint i=1;i<degree;i++) {
+            tmp *= (indet+i);
+            tmp /= (i+1);
+            result += (int64_t)tmp;
+        }
+    }
+
+    return result;
 }
 
 template class BorderBasisTools<uint64_t>;

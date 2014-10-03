@@ -119,7 +119,8 @@ cdef extern from "src/include/borderBasisTools.h" namespace "borderbasis":
                  void* monFactory,
                  bool use_pol_exclusion,
                  bool use_variable_exclusion,
-                 bool* variable_exclusions)
+                 bool* variable_exclusions,
+                 bool use_gf2_reductions)
     cdef cppclass BorderBasisTools[T]:
         BorderBasisTools(BBConfig* config) except +
         void calculateBasis(void* i,
