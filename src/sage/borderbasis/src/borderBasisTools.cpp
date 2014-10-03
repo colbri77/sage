@@ -824,6 +824,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             int64_t Sk = getLastMonomialPos(k+1);
 
             int nc = (Sk-Q)/(indet-excludedListLen)+1;
+            int ncMin = (int)(((double)mstate->G->size())*config->min_mutants_limit);
 
             if(nc<=0) {
                 // futher extension of M would reduce to zero, skip them.
@@ -835,7 +836,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                     goto mutantS4;
                 }
             }
-            if(nc<config->min_mutants_limit) nc = config->min_mutants_limit;
+            if(nc<ncMin) nc = ncMin;
             if(nc<necessary) necessary = nc;
         }
 

@@ -41,7 +41,7 @@ class BBConfig {
 	bool use_variable_exclusion;
 	bool* variable_exclusions;
 	bool use_gf2_reductions;
-        uint min_mutants_limit;
+        double min_mutants_limit;
 };
 
 template<typename T>

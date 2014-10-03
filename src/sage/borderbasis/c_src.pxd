@@ -121,7 +121,7 @@ cdef extern from "src/include/borderBasisTools.h" namespace "borderbasis":
                  bool use_variable_exclusion,
                  bool* variable_exclusions,
                  bool use_gf2_reductions,
-                 unsigned int min_mutants_limit)
+                 double min_mutants_limit)
     cdef cppclass BorderBasisTools[T]:
         BorderBasisTools(BBConfig* config) except +
         void calculateBasis(void* i,
