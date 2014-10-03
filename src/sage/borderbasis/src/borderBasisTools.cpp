@@ -790,8 +790,8 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
     //mutantS5:
     //mutantS5_:
         int necessary = (int)M.size();
-        if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR ||
-           optimization==IMPROVED_MUTANT_OPTIMISTIC) {
+        if((optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_LINEAR ||
+           optimization==IMPROVED_MUTANT_OPTIMISTIC) && M.size()>0) {
             // caluclate the "necessary" amount of polynomials
             uint k = 0x7fffffff;
             uint Q = 0;
