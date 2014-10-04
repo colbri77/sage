@@ -185,7 +185,6 @@ void BorderBasisTools<T>::calculateBasis(const IOwningList<IPolynomial<T>*>* in,
         if(checkOrderIdeal(orderIdeal,mstate))
             break;
     }
-
     delete mstate;
 
     reduceFinal(&tmpVec);
@@ -330,7 +329,6 @@ void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,int pos)
     uint64_t cmpCounter = 0;
     uint i = 0;
     IPolynomial<T>* f = NULL;
-
     //reduction1:
         uint H = pos;
         uint q = 0;
@@ -346,17 +344,20 @@ void BorderBasisTools<T>::addAndReduce(IOwningList<IPolynomial<T>*>* in,int pos)
         f = in->at(H);  // not really removed here, just do that if necessary later
         H++;
         i = 1;
-        uint64_t coef = f->at(0)->getCoef();
-        // reduce the polynomials leading terms coefficient to one
-        if(coef!=1) {
-            for(uint i=0;i<f->size();i++) {
-                Term<T>* term = f->at(i);
-                uint64_t newCoef = field->divide(term->getCoef(),coef);
-                if(newCoef==0) {
-                    f->remove(i);
-                    i--;
-                } else {
-                    term->setCoef(newCoef);
+
+        if(!f->isZero()) {
+            uint64_t coef = f->at(0)->getCoef();
+            // reduce the polynomials leading terms coefficient to one
+            if(coef!=1) {
+                for(uint i=0;i<f->size();i++) {
+                    Term<T>* term = f->at(i);
+                    uint64_t newCoef = field->divide(term->getCoef(),coef);
+                    if(newCoef==0) {
+                        f->remove(i);
+                        i--;
+                    } else {
+                        term->setCoef(newCoef);
+                    }
                 }
             }
         }
@@ -667,6 +668,10 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
         for(uint i=0;i<indet;i++)
             mstate->X_[i] = false;
     }
+
+    /*if(optimization==MUTANT || optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_OPTIMISTIC) {
+        mstate->d_max--;
+    }*/
 
     mutantS2:
         if(optimization==MUTANT) {
