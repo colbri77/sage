@@ -841,7 +841,6 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 mstate->d_min = mstate->d_max; // necessary to stop
                 goto mutantS7;
             }
-            ENSURE(nc>0,"Sk-Q<0");
             if(nc<ncMin) nc = ncMin;
             if(nc<necessary) necessary = nc;
         }
@@ -931,19 +930,21 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
     uint lastDegree = 0;
     IMonomial* t = monFactory->create();
     IMonomial* tTemp = NULL;
+    bool finished = false;
 
     IPolynomial<T>* p = polFactory->create(indet);
     // collect leading monomials
     for(uint i=0,end_i=in->size();i<end_i;i++) {
         p->push(new Term<T>(1,in->at(i)->at(0)->getMonomial()->copy()));
     }
-    for(int i=p->size()-1;i>=0;i--) {
+    for(int i=p->size()-1;i>=0 && !finished;i--) {
         IMonomial* tLead = p->at(i)->getMonomial();
         if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_OPTIMISTIC || optimization==IMPROVED_MUTANT_LINEAR) {
             uint degree = tLead->getDegree();
             if(degree>lastDegree+1)
-                break;
-            lastDegree = degree;
+                finished = true;
+            else
+                lastDegree = degree;
         }
         while(tLead->compare(t)>0) {
             bool inUniverse = universe->contains(t);
@@ -963,7 +964,7 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
         if(tTemp != t)
             tTemp->del();
     }
-    while(!universe->beyondLastElement(t) && tTemp != t) {
+    while(!universe->beyondLastElement(t) && tTemp != t && !finished) {
         bool inUniverse = universe->contains(t);
         if(inUniverse)
             out->push(new Term<T>(1,t));
