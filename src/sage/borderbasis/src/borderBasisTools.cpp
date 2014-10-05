@@ -766,6 +766,8 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                         }
                         for(uint k=0;k<in->size();k++) {
                             in->at(k)->substitute(indetIndex,red,NULL);
+                            if(!in->at(k)->isZero())
+                                universe->add(in->at(k));
                         }
                         IMonomial* excluded = monFactory->create();
                         IMonomial* exTmp = excluded;
