@@ -927,7 +927,7 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
 {
     out->clear();
 
-    uint lastDegree = 0;
+    uint lastDegree = 0x7fffffff;
     IMonomial* t = monFactory->create();
     IMonomial* tTemp = NULL;
     bool finished = false;
@@ -935,7 +935,10 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
     IPolynomial<T>* p = polFactory->create(indet);
     // collect leading monomials
     for(uint i=0,end_i=in->size();i<end_i;i++) {
-        p->push(new Term<T>(1,in->at(i)->at(0)->getMonomial()->copy()));
+        IMonomial* m = in->at(i)->at(0)->getMonomial();
+        if(m->getDegree()<lastDegree)
+            lastDegree = m->getDegree();
+        p->push(new Term<T>(1,m->copy()));
     }
     for(int i=p->size()-1;i>=0 && !finished;i--) {
         IMonomial* tLead = p->at(i)->getMonomial();
