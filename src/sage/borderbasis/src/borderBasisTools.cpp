@@ -616,6 +616,8 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
     OwningVector<IPolynomial<T>*> W_ = OwningVector<IPolynomial<T>*>();
     OwningVector<IPolynomial<T>*> W = OwningVector<IPolynomial<T>*>();
     bool variableReduced = false;
+    bool isEmpty = false;
+    uint d_elim_new = 0;
 
     // never called before, execute step 1
     if(!isBasis) {
@@ -803,6 +805,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             // caluclate the "necessary" amount of polynomials
             uint k = 0x7fffffff;
             uint Q = 0;
+            uint minPols = 0;
             stack<IPolynomial<T>*> sTmp = stack<IPolynomial<T>*>();
 
             while(M.size()>0) {
@@ -822,6 +825,8 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
 
             for(uint i=0,i_end=mstate->G->size();i<i_end;i++) {
                 uint degree = mstate->G->at(i)->at(0)->getMonomial()->getDegree();
+                if(degree <= k)
+                    minPols++;
                 if(degree <= k+1)
                     Q++;
             }
@@ -831,23 +836,19 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
             int nc = (Sk-Q)/(indet-excludedListLen)+1;
             int ncMin = (int)((((double)mstate->G->size())*config->min_mutants_limit)/indet);
 
-            if(nc<=0) {
-                // futher extension of M would reduce to zero, skip them.
-                while(!M.empty()) {
-                    currentPol = M.top();
-                    M.pop();
-                    currentPol->hash(hash);
-                    mstate->P_mutant->set(hash,true);
-                    goto mutantS4;
-                }
+            if(getLastMonomialPos(k)-minPols <= 0) {
+                // we have a degree completely filled - no need to continue 
+                mstate->d_min = mstate->d_max; // necessary to stop
+                goto mutantS7;
             }
+            ENSURE(nc>0,"Sk-Q<0");
             if(nc<ncMin) nc = ncMin;
             if(nc<necessary) necessary = nc;
         }
 
         H = mstate->G->size();
-        bool isEmpty = true;
-        uint d_elim_new = 0x7fffffff;
+        isEmpty = true;
+        d_elim_new = 0x7fffffff;
         for(;!M.empty();) {
             currentPol = M.top();
             M.pop();
@@ -927,6 +928,7 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
 {
     out->clear();
 
+    uint lastDegree = 0;
     IMonomial* t = monFactory->create();
     IMonomial* tTemp = NULL;
 
@@ -937,6 +939,12 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
     }
     for(int i=p->size()-1;i>=0;i--) {
         IMonomial* tLead = p->at(i)->getMonomial();
+        if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_OPTIMISTIC || optimization==IMPROVED_MUTANT_LINEAR) {
+            uint degree = tLead->getDegree();
+            if(degree>lastDegree+1)
+                break;
+            lastDegree = degree;
+        }
         while(tLead->compare(t)>0) {
             bool inUniverse = universe->contains(t);
             if(inUniverse)
