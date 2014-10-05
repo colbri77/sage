@@ -941,15 +941,17 @@ void BorderBasisTools<T>::getOrderIdeal(IOwningList<IPolynomial<T>*>* in,IPolyno
         IMonomial* tLead = p->at(i)->getMonomial();
         if(optimization==IMPROVED_MUTANT || optimization==IMPROVED_MUTANT_OPTIMISTIC || optimization==IMPROVED_MUTANT_LINEAR) {
             uint degree = tLead->getDegree();
-            if(degree>lastDegree+1)
+            if(degree>lastDegree+1) {
                 finished = true;
-            else
-                lastDegree = degree;
+                break;
+            }
         }
         while(tLead->compare(t)>0) {
             bool inUniverse = universe->contains(t);
-            if(inUniverse)
+            if(inUniverse) {
                 out->push(new Term<T>(1,t));
+                lastDegree = t->getDegree();
+            }
             tTemp = t;
             t = t->next();
             if(tTemp == t)
