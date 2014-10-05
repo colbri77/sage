@@ -797,7 +797,15 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                         excludedListLen++;
                         if(field) addAndReduce(mstate->G,0);
                         else toSimpleBasis(mstate->G,false);
+                        if(field) addAndReduce(in,0);
+                        else toSimpleBasis(in,false);
                         universe->add(in);
+                        for(uint k=0;k<in->size();k++) {
+                            uint degree = in->at(k)->at(0)->getMonomial()->getDegree();
+                            if(degree<mstate->d_min)
+                                mstate->d_min = degree;
+                                d_elim = degree+1;
+                        }
                         break;
                     }
                 }
