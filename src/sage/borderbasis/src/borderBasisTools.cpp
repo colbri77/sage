@@ -521,6 +521,7 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
         variableReduced = false;
         // intermission: check if we can (and should) autoreduce
         if(config->use_variable_exclusion) {
+            map<IPolynomial<T>*,bool>* vMap = NULL;
             bool repeat = false;
             do {
                 repeat = false;
@@ -529,6 +530,11 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
                     // currently only allowed for GF(2)
                     IPolynomial<T>* red = in->at(i)->getLinearReducible(&indetIndex,config->variable_exclusions,NULL);
                     if(red!=NULL) {
+                        if(vMap==NULL) {
+                            vMap = new map<IPolynomial<T>*,bool>();
+                            for(uint k=0;k<lastOriginalPolynomial;k++)
+                                (*vMap)[in->at(k)] = true;
+                        }
                         for(uint k=0;k<in->size();k++) {
                             in->at(k)->substitute(indetIndex,red,NULL);
                         }
@@ -547,10 +553,19 @@ void BorderBasisTools<T>::extend(IOwningList<IPolynomial<T>*>* in,bool isBasis)
                         excludedListLen++;
                         if(field) addAndReduce(in,0);
                         else toSimpleBasis(in,false);
+                        OwningVector<IPolynomial<T>*> ov = OwningVector<IPolynomial<T>*>();
+                        for(uint k=0;k<in->size();k++) {
+                            if(vMap->find(in->at(k))!=vMap->end())
+                                ov.push_back(in->at(k));
+                        }
+                        universe->add(&ov);
+                        ov.clear_keep();
+                        lastOriginalPolynomial = -1;
                         break;
                     }
                 }
             } while(repeat);
+            DEL_SAFE(vMap);
         }
 
         OwningVector<IPolynomial<T>*> ovTemp = OwningVector<IPolynomial<T>*>();

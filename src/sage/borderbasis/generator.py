@@ -232,7 +232,7 @@ class BBGenerator(SageObject):
         if(keep_only != None):
             use_variable_exclusion = True
 
-            variables = generators.variables()
+            variables = self._get_variables(generators)
             bool_keep_map = [False]*len(variables)
             for var in keep_only:
                 for i in range(0,len(variables)):
@@ -374,5 +374,16 @@ class BBGenerator(SageObject):
             if useable and pol.degree()<3:
                 return i
         return -1
+
+    def _get_variables(self,pythonList):
+        existing = pythonList.variables()
+        ordered = pythonList.ring().gens()
+        result = []
+        for i in ordered:
+            for e in existing:
+                if ("%s" % (i)) == ("%s" % (e)):
+                    result.append(i)
+                    break
+        return result
 
 

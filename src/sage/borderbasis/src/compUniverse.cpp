@@ -71,6 +71,8 @@ void ICompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint start)
 {
     for(uint i=0,end_i=additions->size(); i<end_i; i++) {
         IPolynomial<T>* pol = additions->at(i);
+        if(pol->isZero())
+            continue;
         for(uint k=0,end_k=pol->size(); k<end_k; k++) {
             add(pol->at(k)->getMonomial());
         }
@@ -163,6 +165,7 @@ void LinearCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint sta
 {
     // this actually expands the universe at least the degree of the biggest monomial in the set
     for(uint i=start,end_i=additions->size();i<end_i;i++) {
+        if(additions->at(i)->isZero()) continue;
         uint degNew = additions->at(i)->at(0)->getMonomial()->getDegree();
         if(degNew>limit)
             limit = degNew;
@@ -308,6 +311,8 @@ void SpecificCompUniverse<T>::add(IOwningList<IPolynomial<T>*>* additions,uint s
     uint64_t maxPos = 0;
     for(uint iPol=start,ts=additions->size();iPol<ts;iPol++) {
         IPolynomial<T>* p = additions->at(iPol);
+        if(p->isZero())
+            continue;
         for(uint iMonomial=0,ts2=p->size();iMonomial<ts2;iMonomial++) {
             IMonomial* t = p->at(iMonomial)->getMonomial();
             uint64_t pos = t->getPos();
@@ -398,6 +403,8 @@ void SpecificCompUniverseNoBorderLog<T>::add(IOwningList<IPolynomial<T>*>* addit
     uint64_t maxPos = 0;
     for(uint iPol=start,ts=additions->size();iPol<ts;iPol++) {
         IPolynomial<T>* p = additions->at(iPol);
+        if(p->isZero())
+            continue;
         for(uint iMonomial=0,ts2=p->size();iMonomial<ts2;iMonomial++) {
             t = p->at(iMonomial)->getMonomial();
             uint64_t pos = t->getPos();
