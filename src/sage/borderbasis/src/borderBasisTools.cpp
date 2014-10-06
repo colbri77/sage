@@ -700,7 +700,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                    !mstate->P_mutant->contains(hash)) {
 
                     mstate->P_mutant->set(hash,true);
-                    d_elim = mstate->d_min+1;
+                    //d_elim = mstate->d_min+1;
 
                     for(uint k=0;k<indet;k++) {
                         if(excludedList[k]) continue;
@@ -750,7 +750,7 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                    !mstate->P_mutant->contains(hash)) {
 
                     mstate->P_mutant->set(hash,true);
-                    d_elim = mstate->d_min+1;
+                    //d_elim = mstate->d_min+1;
 
                     for(uint k=0;k<indet;k++) {
                         if(excludedList[k]) continue;
@@ -761,6 +761,8 @@ void BorderBasisTools<T>::extendMutant(IOwningList<IPolynomial<T>*>* in,bool isB
                 }
             }
         }
+
+        d_elim = mstate->d_min+1;
 
     mutantS3:
         if(field) addAndReduce(mstate->G,H);
