@@ -122,11 +122,17 @@ cdef class PyBorderBasisTools_uint64:
 
     INPUT::
 
-        - ``field`` -- the field to use during calculation
+        - ``field`` -- the field to use during calculation (if matrix is used with a null ptr)
+        - ``matrixFactory`` -- the matrix factory to use during calculation (if field is used with a null ptr)
         - ``polFactory`` -- the polynomial factory to use for generating polynomials
         - ``monFactory`` -- the monomial factory to use for generating monomials
         - ``optimizations`` -- a string describing which algorithm to use
-    
+        - ``use_pol_exclusion`` -- whether to exclude multiples of minimal, detected polynomials
+        - ``use_variable_exclusion`` -- whether to exclude variables from the calculation on the fly
+        - ``variable_exclusions`` -- if variable exclusion is used, which variables to keep
+        - ``use_gf2_reductions`` -- whether the algorithm should reduce polynomials by the field pols (x²+x)
+        - ``min_mutants_limit`` -- the minimal amount of mutants to be used for extension in mutant algorithms (in fraction of columns)   
+ 
     EXAMPLES::
 
         sage: from sage.borderbasis.cppWrapper import *
@@ -135,9 +141,10 @@ cdef class PyBorderBasisTools_uint64:
         sage: R.<x,y> = PolynomialRing(GF(2),2)
         sage: F = PolynomialSequence([x*y,y**2+x],R)
 
-        sage: field = PyFieldFn(2)
-        sage: polynomialFactory = PyPolynomialFactory_uint64()
-        sage: monFactory = PyMonomialFactory()
+        sage: field = PyFieldFn(false,2)
+        sage: matrixFactory = PyMatrixFactory_Fn_uint64(True,2)
+        sage: polynomialFactory = PyPolynomialFactory_uint64(False)
+        sage: monFactory = PyMonomialFactory(True,2,False,"deglex")
 
         sage: PyBorderBasisTools_uint64(field,polynomialFactory,monFactory,F.nvariables(),'enhanced')
         <sage.borderbasis.cppWrapper.PyBorderBasisTools_uint64>
@@ -182,19 +189,21 @@ cdef class PyBorderBasisTools_uint64:
         OUTPUT::
 
             A map with the following structure:
-            {'maxComparisons': <int>}
-            ``maxComparisons`` describes the biggest amount of comparisons between terms the algorithm had to handle during one reduction step
+            {'maxComparisons': <int>,'maxMatrix': {'rows': <int>, 'columns': <int>}}
+            ``maxComparisons`` describes the biggest amount of comparisons between terms the algorithm had to handle during one reduction step - only filled if not matrices are used
+            ``maxMatrix`` describes the biggest matrix the algorithm had to calculate during one reduction step - only filled if no field is used
         
         EXAMPLES::
             sage: from sage.borderbasis.cppWrapper import *
             sage: sr = mq.SR(2,1,1,4,gf2=True,polybori=False)
             sage: F,s = sr.polynomial_system()
 
-            sage: field = PyFieldFn(2)
-            sage: polynomialFactory = PyPolynomialFactory_uint64()
-            sage: monFactory = PyMonomialFactory()
+            sage: field = PyFieldFn(True,2)
+            sage: matrixFactory = PyMatrixFactory_Fn_uint64(False,2)
+            sage: polynomialFactory = PyPolynomialFactory_uint64(False)
+            sage: monFactory = PyMonomialFactory(True,F.nvariables(),False,"degrevlex")
 
-            sage: bbt = PyBorderBasisTools_uint64(field,polynomialFactory,monFactory,F.nvariables(),'enhanced')
+            sage: bbt = PyBorderBasisTools_uint64(field,matrixFactory,polynomialFactory,monFactory,F.nvariables(),'enhanced')
             sage: Basis,orderIdeal = bbt.calculate_basis(F)
 
             sage: bbt.get_statistics()
