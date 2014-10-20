@@ -328,7 +328,23 @@ class BBGenerator(SageObject):
 
             index = self._find_reduceable_index(plist,v)
             if index!=-1:
-                 B = plist[index]+v
+                 try:
+                     for k in range(0,len(plist[index].monomials())):
+                         m = plist[index].monomials()[k]
+                         try:
+                             reducible = m.reducible_by(v.monomials()[0])
+                         except:
+                             reducible = v.monomials()[0].divides(m)
+                         if(reducible):
+                             factor = plist[index].coefficients()[k]
+                             break
+                     B = plist[index]/factor
+                     B = v - B
+                     if(B != plist[index]+v):
+                         print "MUSS WIEDERHOLT WERDEN"
+                 except:
+                     # when this is a boolean polynomial
+                     B = plist[index]+v
                  plist = self._reduce(plist,v,B,max_degree)
         return plist
 
