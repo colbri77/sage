@@ -14,7 +14,7 @@ Small scale example:
 
     sage: R.<x,y> = PolynomialRing(GF(2),2)
     sage: F = PolynomialSequence([x*y,y**2+x],R)
-    sage: gen = BBGenerator(optimization='none',use_positions=True)
+    sage: gen = BBGenerator(optimization='none',use_positions=True,use_autoreduction=False)
     sage: basis,orderIdeal,statistics = gen.calc_basis(generators=F,modPolynomial=2)
 
     sage: basis
@@ -22,88 +22,87 @@ Small scale example:
     sage: orderIdeal
     x + y + 1
     sage: statistics
-    {'maxComparisons': }
+    {'maxComparisons': 0L, 'maxMatrix': {'columns': 7L, 'rows': 6L}}
 
 From mini AES:
 
     sage: from sage.borderbasis.generator import BBGenerator
     sage: sr = mq.SR(2,1,1,4,gf2=True,polybori=False)
     sage: F,s = sr.polynomial_system()
-    sage: gen = BBGenerator(optimization='enhanced')
-    sage: basis,orderIdeal,statistics = gen.calcBasis(F,2)
+    sage: gen = BBGenerator(optimization='optimistic')
+    sage: basis,orderIdeal,statistics = gen.calc_basis(F,2)
 
     sage: basis
-    [k003,
-     k002 + 1,
-     k000,
-     s003 + 1,
-     k001 + s002,
-     k001 + s001,
-     k001 + s000 + 1,
-     w103 + 1,
-     w102 + 1,
-     k001 + w101 + 1,
-     w100,
-     x103,
-     x102 + 1,
-     x101 + 1,
-     k001 + x100,
-     k103,
-     k001 + k102,
-     k101 + 1,
-     k100,
-     s103 + 1,
-     k001 + s102,
-     s101 + 1,
-     k001 + s100 + 1,
-     w203,
-     w202 + 1,
-     k001 + w201 + 1,
-     k001 + w200 + 1,
-     x203 + 1,
-     k001 + x202 + 1,
-     x201,
-     k001 + x200,
-     k001 + k203,
-     k202,
-     k001 + k201,
-     k200,
-     k001*k003,
-     k001*k002 + k001,
-     k001^2 + k001,
-     k000*k001,
-     k001*s003 + k001,
-     k001*s002 + k001,
-     k001*s001 + k001,
-     k001*s000,
-     k001*w103 + k001,
-     k001*w102 + k001,
-     k001*w101,
-     k001*w100,
-     k001*x103,
-     k001*x102 + k001,
-     k001*x101 + k001,
-     k001*x100 + k001,
-     k001*k103,
-     k001*k102 + k001,
-     k001*k101 + k001,
-     k001*k100,
-     k001*s103 + k001,
-     k001*s102 + k001,
-     k001*s101 + k001,
-     k001*s100,
-     k001*w203,
-     k001*w202 + k001,
-     k001*w201,
-     k001*w200,
-     k001*x203 + k001,
-     k001*x202,
-     k001*x201,
-     k001*x200 + k001,
-     k001*k203 + k001,
-     k001*k202,
-     k001*k201 + k001,
-     k001*k200]
+     [k003*k200,
+      k003*k201,
+      k003*k202,
+      k003*k203 + k003,
+      k003*x200,
+      k003*x201,
+      k003*x202 + k003,
+      k003*x203,
+      k003*w200 + k003,
+      k003*w201,
+      k003*w202,
+      k003*w203 + k003,
+      k003*s100 + k003,
+      k003*s101,
+      k003*s102 + k003,
+      k003*s103,
+      k003*k100 + k003,
+      k003*k101 + k003,
+      k003*k102,
+      k003*k103,
+      k003*x100 + k003,
+      k003*x101,
+      k003*x102,
+      k003*x103 + k003,
+      k003*w100,
+      k003*w101,
+      k003*w102 + k003,
+      k003*w103,
+      k003*s000,
+      k003*s001,
+      k003*s002 + k003,
+      k003*s003,
+      k000*k003 + k003,
+      k001*k003,
+      k002*k003,
+      k200,
+      k201,
+      k003 + k202 + 1,
+      k003 + k203,
+      k003 + x200 + 1,
+      x201,
+      x202 + 1,
+      k003 + x203 + 1,
+      k003 + w200,
+      k003 + w201 + 1,
+      w202,
+      w203 + 1,
+      k003 + s100,
+      s101,
+      s102 + 1,
+      k003 + s103 + 1,
+      k100 + 1,
+      k101 + 1,
+      k003 + k102 + 1,
+      k103,
+      k003 + x100,
+      x101,
+      x102,
+      x103 + 1,
+      w100,
+      w101,
+      k003 + w102,
+      k003 + w103 + 1,
+      k003 + s000 + 1,
+      k003 + s001 + 1,
+      k003 + s002,
+      s003,
+      k000 + 1,
+      k001,
+      k002 + k003 + 1]
 """
 
 #*****************************************************************************
@@ -146,14 +145,19 @@ class BBGenerator(SageObject):
 
         The default optimization level is 'enhanced'. For the levels 'optimistic' and 'experimental', termination can no longer be proven.
     """
-    def __init__(self, optimization="optimistic", use_positions=True, use_matrix=True, use_autoreduction=True, use_pol_exclusion=False, order="deglex",min_mutants_limit=0):
+    def __init__(self, optimization="enhanced", use_positions=True, use_matrix=True, use_autoreduction=True, use_pol_exclusion=False, order="deglex",min_mutants_limit=0):
         r"""
         Generates a ``BBGenerator`` and initializes it with the chosen optimization level
 
         INPUT::
 
             - ``optimization`` -- (default 'enhanced') which algorithm variant should be used
-            - ``use_positions`` -- (default True) whether to use calculated DegLex-Positions in the algorithm        
+            - ``use_positions`` -- (default True) whether to use calculated DegLex/DegRevLex-Positions in the algorithm  
+            - ``use_matrix`` -- (default True) whether to use a matrix during the calculation or a own gauss-variant instead
+            - ``use_autoreduction`` (default True) if caluclations are executed in GF(2), defines whether the algorithm should autoreduce exponents >1 to 1
+            - ``use_pol_exclusion`` (default False) whether minimal polynomials should affect the computational universe in future rounds
+            - ``order`` (default 'deglex') which term ordering to use during the calculation
+            - ``min_mutants_limit`` (default 0) percentage 0.0-1.0, that describes how many new polynomials are extended at once in the mutant algorithms. The final value is calculated as current_amount_of_leading_terms * min_mutants_limit / number_of_variables.      
 
         EXAMPLES::
 
@@ -161,6 +165,8 @@ class BBGenerator(SageObject):
 
             sage: BBGenerator()
             BBGenerator(optimization='enhanced')
+            sage: BBGenerator(optimization='improved_mutant',order='degrevlex')
+            BBGenerator(optimization='improved_mutant')
         """
         self.order = order
         self.optimization = optimization
@@ -188,6 +194,8 @@ class BBGenerator(SageObject):
 
             - ``generators`` -- a ``PolynomialSequence``, containing the generator polynomials
             - ``modPolynomial`` -- the GF-polynomial used in the calculation as integer
+            - ``reduce_monomials_but`` (default None) if this value is a list of variables, the algorithm performs a (slow) quadratic substitution of the variables not provided in the list (as far as possible)
+            - ``keep_only`` (default None) if this value is a list of variables, the algorithm substitutes variables not in the list with linear substitution during the calculation.
 
         OUTPUT::
 
@@ -195,7 +203,7 @@ class BBGenerator(SageObject):
 
             1. The calculated borderbasis as list of polynomials
             2. The according order ideal as polynomial
-            3. A map containing statistics and benchmarks, currently only the biggest matrix calculated
+            3. A map containing statistics and benchmarks, currently either the biggest matrix, or the maximum amount of comparisons in one run is logged (depending on the configuration of the object)
 
         EXAMPLES:
 
@@ -204,7 +212,7 @@ class BBGenerator(SageObject):
 
             sage: R.<x,y> = PolynomialRing(GF(2),2)
             sage: F = PolynomialSequence([x*y,y**2+x],R)
-            sage: gen = BBGenerator(optimization='none')
+            sage: gen = BBGenerator(optimization='none',use_autoreduction=False)
             sage: basis,orderIdeal,statistics = gen.calc_basis(generators=F,modPolynomial=2)
 
             sage: basis
@@ -212,17 +220,15 @@ class BBGenerator(SageObject):
             sage: orderIdeal
             x + y + 1
             sage: statistics
-            {'maxMatrix': {'columns': 8L, 'rows': 7L}}
-
+            {'maxComparisons': 0L, 'maxMatrix': {'columns': 7L, 'rows': 6L}}
             
-            sage: gen = BBGenerator(optimization='optimistic')
-            sage: basis,orderIdeal,statistics = gen.calcBasis(F,2)
-            # doesn't seem to terminate: Termination not proven with levels above 'enhanced'
-
-            sage: F = PolynomialSequence([x**2,y**2+1],2)
-            sage: basis,orderIdeal,statistics = gen.calcBasis(F,2)
+            sage: gen = BBGenerator(optimization='experimental',use_autoreduction=False,use_matrix=False)
+            sage: F = PolynomialSequence([x**2,y**2+1],R)
+            sage: basis,orderIdeal,statistics = gen.calc_basis(F,2)
             sage: basis
-            [y^2 + 1, x^2, x*y^2 + x, x^2*y]  # 'optimistic' does terminate in this case, though
+            [y^2 + 1, x^2, x*y^2 + x, x^2*y]
+            sage: statistics
+            {'maxComparisons': 2L, 'maxMatrix': {'columns': 0L, 'rows': 0L}}
 
         WARNING::
 
@@ -270,6 +276,33 @@ class BBGenerator(SageObject):
         return (basis,orderIdeal,statistics)
 
     def shrink_system(self,plist,keyvars,polybori=False,max_degree=0x7fffffff):
+        r"""
+        Shrinks the provided polynomial system through quadratic substitution
+
+        INPUT::
+            - ``plist`` -- a PolynomialSequence containing the polynomials that are to be shrinked
+            - ``keyvars`` -- a list of variables that should not be substituted
+            - ``polybori`` (default False) whether polynomials sare in GF(2) and should be autoreduced (if exponents >1 are automatically 1)
+            - ``max_degree`` (default 0x7fffffff) the degree that the resulting polynomials are allowed to have. If above, the substitution is reversed for this polynomial.
+
+        OUTPUT::
+            
+            A PolynomialSequence containing the shrinked polynomials
+        
+        EXAMPLES:
+        
+            sage: from sage.borderbasis.generator import BBGenerator
+
+            sage: sr = mq.SR(2,1,1,4,gf2=True,polybori=False)
+            sage: F,s = sr.polynomial_system()
+            sage: gen = BBGenerator('none')
+            sage: key_vars = F.ring().gens()[len(F.ring().gens())-4:len(F.ring().gens())]
+            sage: G = gen.shrink_system(F,key_vars,polybori=True)
+            sage: F
+            Polynomial Sequence with 104 Polynomials in 36 Variables
+            sage: G
+            Polynomial Sequence with 48 Polynomials in 16 Variables
+        """
         # if we should autoreduce the system, we port it to BooleanPolynomial, where this stuff gets done automatically
         if polybori and type(plist[0])!=BooleanPolynomial:
             newRing = BooleanPolynomialRing(len(plist.ring().variable_names()),plist.ring().variable_names())
@@ -325,6 +358,9 @@ class BBGenerator(SageObject):
         return self._latex_()
 
     def _reduce(self,plist,A,B,max_degree):
+        r"""
+        Reduce all appearences of A with B in plist, up to a result of degree max_degree
+        """
         result = PS([],plist.ring())
         for pol in plist:
             pNew = plist[0]-plist[0]
@@ -357,6 +393,9 @@ class BBGenerator(SageObject):
         return result
 
     def _find_reduceable_index(self,plist,var):
+        r"""
+        returns an index for a polynomial in plist that enables the substitution of the variable var, or -1 if none such can be found.
+        """
         i = -1
         for pol in plist:
             i = i + 1
@@ -376,6 +415,9 @@ class BBGenerator(SageObject):
         return -1
 
     def _get_variables(self,pythonList):
+        r"""
+        returns a list of all actually appearing variables in pythonList, ordered by the variable ordering.
+        """
         existing = pythonList.variables()
         ordered = pythonList.ring().gens()
         result = []

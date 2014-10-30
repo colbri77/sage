@@ -227,6 +227,19 @@ cdef class PyBorderBasisTools_uint64:
 
             1. A list of polynomials, the calculated border basis
             2. A polynomial, the according order ideal
+
+        EXAMPLES::
+            sage: from sage.borderbasis.cppWrapper import *
+            sage: sr = mq.SR(2,1,1,4,gf2=True,polybori=False)
+            sage: F,s = sr.polynomial_system()
+
+            sage: field = PyFieldFn(True,2)
+            sage: matrixFactory = PyMatrixFactory_Fn_uint64(False,2)
+            sage: polynomialFactory = PyPolynomialFactory_uint64(False)
+            sage: monFactory = PyMonomialFactory(True,F.nvariables(),False,"deglex")
+
+            sage: bbt = PyBorderBasisTools_uint64(field,matrixFactory,polynomialFactory,monFactory,F.nvariables(),'optimistic')
+            sage: Basis,orderIdeal = bbt.calculate_basis(F)
         """
         nativeInWrapper = self._to_native_pol_list(generators)
         cdef IOwningList[IPolynomial_uint64*]* nativeIn = (<PyIOwningList_pol>(nativeInWrapper)).thisptr
