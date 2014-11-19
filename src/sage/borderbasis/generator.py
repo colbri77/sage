@@ -340,8 +340,6 @@ class BBGenerator(SageObject):
                              break
                      B = plist[index]/factor
                      B = v - B
-                     if(B != plist[index]+v):
-                         print "MUSS WIEDERHOLT WERDEN"
                  except:
                      # when this is a boolean polynomial
                      B = plist[index]+v
